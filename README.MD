@@ -75,7 +75,6 @@ user=> (demo 7 (lpf (mix (saw [50 (line 100 1600 5) 101 100.5]))
 
 
 ## Возможный код
-### 1
 ```clojure
 
 (step "sendinfo"
@@ -154,20 +153,20 @@ user=> (demo 7 (lpf (mix (saw [50 (line 100 1600 5) 101 100.5]))
 
 ## Литература
 ### DSL
-https://doi.org/10.1016/S0164-1212(00)00089-3
-https://doi.org/10.1093/bib/bbw130
-https://www.scitepress.org/papers/2010/29254/29254.pdf
-https://cyberleninka.ru/article/n/obzor-sovremennyh-sredstv-sozdaniya-i-podderzhki-predmetno-orientirovannyh-yazykov-programmirovaniya/viewer
-https://cyberleninka.ru/article/n/sozdanie-predmetno-orientirovannyh-yaykov/viewer
-https://cyberleninka.ru/article/n/ob-ispolzovanii-v-programmirovanii-problemno-orientirovannyh-yazykov/viewer
-https://cyberleninka.ru/article/n/razrabotka-yazyka-programmirovaniya-na-racket/viewer
+- https://doi.org/10.1016/S0164-1212(00)00089-3
+- https://doi.org/10.1093/bib/bbw130
+- https://www.scitepress.org/papers/2010/29254/29254.pdf
+- https://cyberleninka.ru/article/n/obzor-sovremennyh-sredstv-sozdaniya-i-podderzhki-predmetno-orientirovannyh-yazykov-programmirovaniya/viewer
+- https://cyberleninka.ru/article/n/sozdanie-predmetno-orientirovannyh-yaykov/viewer
+- https://cyberleninka.ru/article/n/ob-ispolzovanii-v-programmirovanii-problemno-orientirovannyh-yazykov/viewer
+- https://cyberleninka.ru/article/n/razrabotka-yazyka-programmirovaniya-na-racket/viewer
 
-https://www.youtube.com/watch?v=j382BLptxCc
-https://www.youtube.com/playlist?list=PLJQ_tjFEDMB-C1Op_L91gMTCtz2Cepe-3
+- https://www.youtube.com/watch?v=j382BLptxCc
+- https://www.youtube.com/playlist?list=PLJQ_tjFEDMB-C1Op_L91gMTCtz2Cepe-3
 
 ### Чат-боты
-http://dx.doi.org/10.1007/978-3-030-62522-1_15
-http://dx.doi.org/10.5381/jot.2019.18.2.a5
+- http://dx.doi.org/10.1007/978-3-030-62522-1_15
+- http://dx.doi.org/10.5381/jot.2019.18.2.a5
 
 
 ## Вопросы
