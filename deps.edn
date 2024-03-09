@@ -1,0 +1,34 @@
+{:paths       ["src", "resources", "classes"]
+ :deps
+ {org.clojure/clojure {:mvn/version "1.11.1"}
+  ;; org.clojure/tools.deps.alpha {:mvn/version "LATEST"}
+  cider/cider-nrepl                   {:mvn/version "LATEST"}
+  refactor-nrepl/refactor-nrepl       {:mvn/version "2.5.1"}
+
+  metosin/malli {:mvn/version "0.14.0"}
+
+  ;; com.clojure-goes-fast/clj-java-decompiler {:mvn/version "0.3.4"}
+  ;; com.clojure-goes-fast/clj-async-profiler {:mvn/version "1.1.1"}
+  ;; criterium/criterium {:mvn/version "0.4.6"}
+  ;; org.clojure/tools.analyzer.jvm {:mvn/version "1.2.2"}
+  ;; com.clojure-goes-fast/jvm-hiccup-meter {:mvn/version "0.1.1"}
+  ;; io.dropwizard.metrics/metrics-core {:mvn/version "4.2.25"}
+  ;; com.clojure-goes-fast/jvm-alloc-rate-meter {:mvn/version "0.1.4"}
+  ;; metosin/reitit {:mvn/version "0.7.0-alpha7"}
+  ;; metosin/muuntaja {:mvn/version "0.6.8"}
+  ;; io.github.clojure/tools.build {:git/tag "v0.9.6" :git/sha "8e78bcc"}
+  ;; org.openjdk.jmh/jmh-core {:mvn/version "1.36"}
+  ;; org.openjdk.jmh/jmh-generator-annprocess {:mvn/version "1.36"}
+  ;; jmh-clojure/jmh-clojure {:mvn/version "0.4.1"}
+  ;; com.cnuernber/ham-fisted {:mvn/version "2.016"}
+  ;; com.aphyr/bifurcan-clj {:mvn/version "0.1.1"}
+  }
+
+ :aliases
+ {:nrepl {:jvm-opts    ["-XX:-OmitStackTraceInFastThrow"
+                        "-Djdk.attach.allowAttachSelf"
+                        ]
+          :main-opts   ["-m" "nrepl.cmdline" "--middleware"
+                        "[refactor-nrepl.middleware/wrap-refactor,cider.nrepl/cider-middleware]"]}
+  }
+ }

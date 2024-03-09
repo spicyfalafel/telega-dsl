@@ -1,5 +1,39 @@
 # DSL для телеграма
 
+## Current design
+```clojure
+
+(def hello-step
+  {:name :hello-step
+   :step-type :message
+   :message "Welcome to start command!"})
+
+(def group-step
+  {:name :group-step
+   :step-type :question
+   :question "Which group are you in?"
+   :answer [:enum {:error/message "should be valid group"}
+            "P34110" "P34111" "P34112"]})
+
+(defn fullname? [name-str]
+  (contains? #{2 3} (count (str/split name-str #" "))))
+
+(def name-step
+  {:name :name-step
+   :step-type :question
+   :question "What is your full name?"
+   :back :group-step
+   :answer [:and string? [:fn fullname?]]})
+
+(def commands
+  [{:type :command
+    :name :start
+    :steps [hello-step group-step name-step]}
+   {:type :command
+    :name :help
+    :message "I am course bot.\nAvailable commands:\n/start\n/help"}])
+```
+
 ## Проблема
 При разработке диалогов в чат-ботах (телеграм), нужно:
   1) хранить стэйт пользователей, на каком шаге диалога пользователь
