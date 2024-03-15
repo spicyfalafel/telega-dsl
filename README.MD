@@ -1,38 +1,115 @@
 # DSL для телеграма
 
 ## Current design
+Пример.
+Сценарии:
+
+1. Студент начинает регистрацию:
+   - Бот приветствует студента и предлагает выбрать группу.
+   - На любом шаге студент может нажать "Назад" и вернуться к предыдущему шагу, удаляя введенные данные.
+   - Студент выбирает группу или решает не регистрироваться.
+   - Если студент выбрал группу, бот просит ввести имя и фамилию.
+   - Студент вводит имя и фамилию.
+   Если формат верный и студент найден в базе данных, бот переходит к следующему шагу.
+   - Бот предлагает рассказать о себе.
+   - Если студент выбрал "Да", бот просит написать описание увлечений в IT.
+   - Студент вводит описание. Если описание длиннее 50 символов, бот показывает его и предлагает отредактировать или подтвердить.
+   - Если студент подтвердил описание, бот сохраняет данные студента и завершает регистрацию с успешным сообщением.
+   - Если студент выбрал "Нет" на шаге о рассказе о себе, бот завершает регистрацию с успешным сообщением.
+   - Если описание короче 50 символов, бот выводит сообщение об ошибке и просит ввести описание заново.
+
+2. Студент не хочет регистрироваться:
+   - Бот приветствует студента и предлагает выбрать группу.
+   - Студент выбирает "Я не хочу регистрироваться".
+   - Бот завершает регистрацию с сообщением "Регистрация пропущена".
+
 ```clojure
+(ns telega-dsl-example
+  (:require [malli.core :as m]
+            [clojure.string :as str]))
 
-(def hello-step
-  {:name :hello-step
-   :step-type :message
-   :message "Welcome to start command!"})
+(set! *warn-on-reflection* true)
 
-(def group-step
-  {:name :group-step
-   :step-type :question
-   :question "Which group are you in?"
-   :answer [:enum {:error/message "should be valid group"}
-            "P34110" "P34111" "P34112"]})
+(defn dbget [path]
+  (println "Getting stub " path))
 
-(defn fullname? [name-str]
-  (contains? #{2 3} (count (str/split name-str #" "))))
+(defn dbdelete [path]
+  (println "Deleting stub " path))
 
-(def name-step
-  {:name :name-step
-   :step-type :question
-   :question "What is your full name?"
-   :back :group-step
-   :answer [:and string? [:fn fullname?]]})
+(defn student-exists? [name-s]
+  (println "student exists stub" name-s))
 
-(def commands
-  [{:type :command
-    :name :start
-    :steps [hello-step group-step name-step]}
-   {:type :command
-    :name :help
-    :message "I am course bot.\nAvailable commands:\n/start\n/help"}])
+(def name-schema
+  [:and
+   [:re {:error/message "Имя и фамилия должны содержать пробел."} #".+\s+.+"]
+   [:fn
+    {:error/fn (fn [_] "Имя и фамилия должны начинаться с заглавной буквы")}
+    (fn [name-s]
+      (let [[name surname] (str/split name-s #"\s+")]
+        (and (Character/isUpperCase ^Character (first name))
+             (Character/isUpperCase ^Character (first surname)))))]])
+
+(defn validate-name [name-s]
+  (if (m/validate name-schema name-s)
+    (when-not (student-exists? name-s)
+      {:error/message "Студент с таким именем и фамилией не найден в базе данных."})
+    {:error/message "Неверный формат имени и фамилией."}))
+
+(def bot-commands
+  [{:command "/start"
+    :steps
+    [{:message "Добро пожаловать! Давайте начнем регистрацию."}
+     {:id "ask-group"
+      :message "Выберите вашу группу:"
+      :menu (conj
+             (for [group (dbget [:groups])]
+               {:label (str "Группа " group) :save-as [:group] :value group})
+             {:label "Я не хочу регистрироваться" :save-as [:skip-registration] :value true :end true})}
+
+     {:id "ask-name"
+      :message "Введите ваше имя и фамилию:"
+      :validate validate-name
+      :save-as [:name]
+      :on-back {:action (fn [] (dbdelete [:name]))
+                :message "Имя и фамилия удалены."}
+      :back true}
+
+     {:id "ask-bio"
+      :message "Хотите рассказать о себе?"
+      :menu [{:label "Да" :save-as [:bio?] :value true}
+             {:label "Нет" :save-as [:bio?] :value false}]
+      :on-back {:action (fn [] (dbdelete [:bio?]))
+                :message "Информация о биографии удалена."}
+      :back true}
+
+     {:id "write-bio"
+      :message "Расскажите о своих увлечениях в IT:"
+      :validate (fn [bio]
+                  (when (<= (count bio) 50)
+                    {:error/message "Описание должно быть длиннее 50 символов."}))
+      :save-as [:bio]
+      :back true}
+
+     {:id "confirm-bio"
+      :save-as [:bio]
+      :message (fn [] (if-let [bio (dbget [:bio])]
+                        (str "Ваше описание: " bio)
+                        "Введите ваше описание"))
+      :menu [{:label "Готово"}]
+      :back "ask-bio"}
+
+     {:id "register-done"
+      :message (fn [] (if (dbget [:skip-registration])
+                        "Регистрация пропущена."
+                        (if (dbget [:bio?])
+                          "Регистрация пройдена успешно. Спасибо за описание!"
+                          "Регистрация пройдена успешно.")))}]}
+
+   {:command "/help"
+    :message "Этот бот помогает студентам пройти регистрацию в системе обучения."}])
 ```
+
+
 
 ## Проблема
 При разработке диалогов в чат-ботах (телеграм), нужно:
@@ -52,6 +129,10 @@
 DSL - предметно-ориентированный язык. Обычно встроенные в общий язык, реже бывают внешние. Основная задача - снизить сложность программирования, используя предметный язык, который транслируется в язык общего назначения.
 В идеале, если бы на этом языке мог писать не программист, а человек той специальности, который разбирается в предметно-ориентированном языке.
 DSL хорошо прижился и используется в querying languages: SQL, GraphQL
+#_(defmacro menu [items]
+  `(for [item# ~items]
+     {:label (:label item#)
+      :on-select (fn [] (dbsave (:save-as item#) (:value item#)))}))
 
 - Data Driven DSL - если всё можно представить данными, ими легче манипулировать. Данные можно передать в другую систему. На одни данные можно сделать несколько интерпретаторов.
 - Traditional LISP DSL - функции, макросы. Менее гибкие, чем Data Driven DSL, сложнее дебажить, сложнее генерировать.
