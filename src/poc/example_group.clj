@@ -23,4 +23,5 @@
                                           "не задана")))}]}])
 
 (defn -main []
-  (poc/start-bot bot-commands {:token (System/getenv "BOT_TOKEN")}))
+  (poc/start-bot bot-commands {:token (System/getenv "BOT_TOKEN")
+                               :type :polling}))
