@@ -1,8 +1,8 @@
-(ns hello.handlers
+(ns poc.bot
   (:require
     [telegrambot-lib.core :as tbot]
     [malli.core :as m]
-    [hello.bot :as bot]
     [clojure.string :as str]
     [malli.generator :as mg]))
 
+(def mybot (tbot/create))

@@ -1,4 +1,4 @@
-(ns telega-dsl-example
+(ns poc.telega-dsl-example
   (:require [malli.core :as m]
             [clojure.string :as str]))
 
@@ -33,6 +33,7 @@
   [{:command "/start"
     :steps
     [{:message "Добро пожаловать! Давайте начнем регистрацию."}
+
      {:id "ask-group"
       :message "Выберите вашу группу:"
       :menu (conj
