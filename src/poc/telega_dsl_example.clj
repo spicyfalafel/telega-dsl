@@ -1,14 +1,9 @@
 (ns poc.telega-dsl-example
   (:require [malli.core :as m]
+            [poc.core :as poc]
             [clojure.string :as str]))
 
 (set! *warn-on-reflection* true)
-
-(defn dbget [path]
-  (println "Getting stub " path))
-
-(defn dbdelete [path]
-  (println "Deleting stub " path))
 
 (defn student-exists? [name-s]
   (println "student exists stub" name-s))
@@ -37,7 +32,7 @@
      {:id "ask-group"
       :message "Выберите вашу группу:"
       :menu (conj
-             (for [group (dbget [:groups])]
+             (for [group (poc/dbget [:groups])]
                {:label (str "Группа " group) :save-as [:group] :value group})
              {:label "Я не хочу регистрироваться" :save-as [:skip-registration] :value true :end true})}
 
@@ -45,7 +40,7 @@
       :message "Введите ваше имя и фамилию:"
       :validate validate-name
       :save-as [:name]
-      :on-back {:action (fn [] (dbdelete [:name]))
+      :on-back {:action (fn [] (poc/dbdelete [:name]))
                 :message "Имя и фамилия удалены."}
       :back true}
 
@@ -53,7 +48,7 @@
       :message "Хотите рассказать о себе?"
       :menu [{:label "Да" :save-as [:bio?] :value true}
              {:label "Нет" :save-as [:bio?] :value false}]
-      :on-back {:action (fn [] (dbdelete [:bio?]))
+      :on-back {:action (fn [] (poc/dbdelete [:bio?]))
                 :message "Информация о биографии удалена."}
       :back true}
 
@@ -67,18 +62,22 @@
 
      {:id "confirm-bio"
       :save-as [:bio]
-      :message (fn [] (if-let [bio (dbget [:bio])]
+      :message (fn [] (if-let [bio (poc/dbget [:bio])]
                         (str "Ваше описание: " bio)
                         "Введите ваше описание"))
       :menu [{:label "Готово"}]
       :back "ask-bio"}
 
      {:id "register-done"
-      :message (fn [] (if (dbget [:skip-registration])
+      :message (fn [] (if (poc/dbget [:skip-registration])
                         "Регистрация пропущена."
-                        (if (dbget [:bio?])
+                        (if (poc/dbget [:bio?])
                           "Регистрация пройдена успешно. Спасибо за описание!"
                           "Регистрация пройдена успешно.")))}]}
 
    {:command "/help"
     :message "Этот бот помогает студентам пройти регистрацию в системе обучения."}])
+
+(defn -main []
+  (poc/start-bot bot-commands {:token (System/getenv "BOT_TOKEN")
+                               :type :polling}))

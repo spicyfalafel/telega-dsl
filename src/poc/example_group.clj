@@ -3,8 +3,8 @@
    [poc.core :as poc]))
 
 (def bot-commands
-  [{:command "/start"
-    :steps
+  {:start
+   {:steps
     [{:id "start-register"
       :message "Добро пожаловать! Давайте начнем регистрацию."
       :menu [{:label "Next"}
@@ -18,10 +18,13 @@
 
      {:id "register-done"
       :message (fn []
-                 (str "Привет! Группа " (if-let [group (poc/dbget [:group])]
-                                          group
-                                          "не задана")))}]}])
+                 #_(str "Привет! Группа "
+                      (if-let [group (poc/dbget [:group])]
+                        group
+                        "не задана")))}]}
+   :help {:message "Hello"}})
 
 (defn -main []
   (poc/start-bot bot-commands {:token (System/getenv "BOT_TOKEN")
-                               :type :polling}))
+                               :type :webhook
+                               :port 8080}))
