@@ -73,6 +73,18 @@ async def main():
     setup_dialogs(dp)
 
     await dp.start_polling(bot)
+    config = RedisConfig(
+            HOST=env.str("REDIS_HOST"),
+            PORT=env.int("REDIS_PORT"),
+            DB=env.int("REDIS_DB"),
+        ),
+    storage = RedisStorage.from_url(
+        url=config.redis.dsn(),
+        connection_kwargs={"decode_responses": True}
+    )
+    dp = Dispatcher(
+        storage=storage,
+    )
 
 
 if __name__ == "__main__":

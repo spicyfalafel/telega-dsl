@@ -1,16 +1,16 @@
-(ns poc.core
+(ns tg-dialog.core
   (:require
    [telegrambot-lib.core :as tbot]
-   [malli.core :as m]
+   #_[malli.core :as m]
    [clojure.string :as str]
    [jsonista.core :as json]
-   [poc.validation :as validation]
-   [poc.example-group :as example]
-   [poc.bot :as bot]
-   [poc.steps :as steps]
+   [tg-dialog.validation :as validation]
+   [tg-dialog.example.example-group :as example]
+   [tg-dialog.bot :as bot]
+   [tg-dialog.steps :as steps]
    [org.httpkit.client :as client]
    [org.httpkit.server :as hk-server]
-   [malli.generator :as mg]))
+   #_[malli.generator :as mg]))
 
 (set! *warn-on-reflection* true)
 
@@ -75,10 +75,11 @@
         :up))))
 
 (start-bot example/bot-commands)
+
 (comment
   (start-bot {:help {} :a {}})
 
-  (def ngrok-url "https://b973-188-243-183-57.ngrok-free.app")
+  (def ngrok-url "https://106e-188-243-183-57.ngrok-free.app")
   (def token (System/getenv "BOT_TOKEN"))
 
   ;;https://api.telegram.org/bot{my_bot_token}/setWebhook?url={url_to_send_updates_to}

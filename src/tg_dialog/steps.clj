@@ -1,12 +1,12 @@
-(ns poc.steps
+(ns tg-dialog.steps
   (:require
    [telegrambot-lib.core :as tbot]
    [malli.core :as m]
    [clojure.string :as str]
    [jsonista.core :as json]
-   [poc.validation :as validation]
-   [poc.example-group :as example]
-   [poc.bot :as bot]
+   [tg-dialog.validation :as validation]
+   [tg-dialog.example-group :as example]
+   [tg-dialog.bot :as bot]
    [org.httpkit.client :as client]
    [org.httpkit.server :as hk-server]
    [malli.generator :as mg]))

@@ -1,4 +1,4 @@
-(ns poc.validation
+(ns tg-dialog.validation
   (:require
    [malli.core :as m]
    [com.mjdowney.rich-comment-tests]))
