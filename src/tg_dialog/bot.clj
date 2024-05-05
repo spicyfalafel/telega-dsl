@@ -1,8 +1,5 @@
 (ns tg-dialog.bot
   (:require
-    [telegrambot-lib.core :as tbot]
-    [malli.core :as m]
-    [clojure.string :as str]
-    [malli.generator :as mg]))
+    [telegrambot-lib.core :as tbot]))
 
 (def mybot (tbot/create))

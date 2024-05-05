@@ -1,92 +1,147 @@
 (ns tg-dialog.steps
   (:require
    [telegrambot-lib.core :as tbot]
-   [malli.core :as m]
-   [clojure.string :as str]
-   [jsonista.core :as json]
-   [tg-dialog.validation :as validation]
-   [tg-dialog.example-group :as example]
-   [tg-dialog.bot :as bot]
-   [org.httpkit.client :as client]
-   [org.httpkit.server :as hk-server]
-   [malli.generator :as mg]))
+   [tg-dialog.misc :as misc]
+   [tg-dialog.bot :as bot]))
 
 (set! *warn-on-reflection* true)
 
 (def no-id-step-prefix "no-id-step")
 
 (defn add-ids [steps]
-  (let [steps-vec (vec (map-indexed
-                        (fn [idx s]
-                          (if (:id s)
-                            s
-                            (assoc s :id (str no-id-step-prefix idx))))
-                        steps))]
-    (reduce
-     (fn [acc step]
-       (assoc acc (keyword (str (:id step))) step))
-     {}
-     steps-vec)))
+  (if (vector? steps)
+    (vec (map-indexed
+           (fn [idx s]
+             (if (:id s)
+               s
+               (assoc s :id (str no-id-step-prefix idx))))
+           steps))
+    (when (map? steps)
+      (if (:id steps)
+        steps
+        (assoc steps :id "0")))))
 
-^:rct/test
-(comment
-  (add-ids [{:id 1 :hello 2} {:id 2 :hello 3} {:hello 4}])
-;=> {:1 {:id 1, :hello 2},
-;    :2 {:id 2, :hello 3},
-;    :no-id-step2 {:hello 4, :id "no-id-step2"}}
-  (add-ids []) ;=> {}
-  )
+(defn menu-item->tg [{:keys [label value] :as menu-item}]
+  {:text label :callback_data (or value label)})
 
-(defn send-menu [id data menu]
-  (tbot/send-message bot/mybot id "todo send menu"))
+(defn menu->tg [menu]
+  [(mapv menu-item->tg menu)])
 
-(defn call-message-fn [id data message]
-  (tbot/send-message bot/mybot id "todo send message fn"))
 
-(defn handle-step [step id data]
+(defn send-menu [id text menu]
+  (tbot/send-message
+    bot/mybot
+    id
+    text
+    {:reply_markup
+     {:inline_keyboard
+      (menu->tg menu)}}))
+
+(defn call-message-fn [ctx id data message]
+  (let [message-fn-res (message (misc/get-dialog-data ctx id))]
+    (when (string? message-fn-res)
+      (tbot/send-message bot/mybot id message-fn-res))))
+
+(defn handle-message [ctx step id data]
+  (cond
+    (string? (:message step))
+    [:string #(tbot/send-message bot/mybot id (:message step))]
+
+    (fn? (:message step))
+    [:fn #(call-message-fn ctx id data (:message step))]
+    :else nil))
+
+(defn handle-menu [id text step]
+  [:menu #(send-menu id text (:menu step))])
+
+(defn handle-step [ctx step id data]
   (let [fns (cond-> []
-              (string? (:message step))
-              (conj #(tbot/send-message bot/mybot id (:message step)))
-
-              (:message step)
-              (conj #(call-message-fn id data (:message step)))
-
               (:menu step)
-              (conj #(send-menu id data (:menu step))))]
-    (doseq [f fns]
-      (f))))
+              (conj (handle-menu id (:message step) step))
 
-(def CURRENT_STEP (atom {}))
+              (and (not (:menu step)) (:message step))
+              (conj (handle-message ctx step id data)))]
+    (mapv (fn [f] ((second f))) fns)))
 
-(defn current-step [current-step-atom steps id]
-  (let [all-steps (keys steps)
-        last-step (get @current-step-atom id)]
+(defn current-step [ctx steps chat-id]
+  (let [last-step (misc/get-current-step ctx chat-id)]
     (if last-step
-      (get steps (second (drop-while #(not= % last-step) all-steps)))
-      (get steps (first all-steps)))))
+      last-step
+      (first steps))))
 
-(defn change-current-step [current-step-atom step id]
-  (swap! current-step-atom (fn [m] (assoc m id (:id step)))))
+(defn next-step [ctx steps chat-id]
+  (let [last-step (misc/get-current-step ctx chat-id)]
+    (if last-step
+      (second (drop-while #(not= % last-step) steps))
+      (first steps))))
 
-^:rct/test
-(comment
-  ;; (def stp1 (atom {}))
-  ;; (def stps {:step1 {:hui 1 :id :step1}
-  ;;            :step2 {:hui 2 :id :step2}})
-  ;; (current-step stp1 stps 123) ;=> {:hui 1, :id :step1}
-  ;; (change-current-step stp1 {:hui 1, :id :step1} 123)
-  ;; (= @stp {123 :step1}) ;=> true
-  ;; (current-step stp stps 123) ;=> {:hui 2, :id :step2}
-  ;; (change-current-step stp {:hui 2, :id :step2} 123)
-  ;; (= @stp {123 :step2}) ;=> true
-  )
+(defn change-current-step! [ctx id step]
+  (swap! ctx (fn [m] (assoc-in m [id :CURRENT_STEP] step))))
 
-(defn handle-current-step [steps id data]
-  (let [steps (add-ids steps)
-        current-step (current-step @CURRENT_STEP steps id)]
-    (println "current-step " current-step)
-    (handle-step current-step id data)
-    (println "handled current step")
-    (change-current-step CURRENT_STEP current-step id)))
+(defn goto-aliases [all-steps goto]
+  (cond
+    (= (keyword goto) :end)
+    (:id (last all-steps))
 
-(com.mjdowney.rich-comment-tests/run-ns-tests! *ns*)
+    :else
+    goto))
+
+(defn find-by-id [steps-vec step-id]
+  (println "findbyid " step-id)
+  (println "fbi steps " steps-vec)
+  (println "a" (goto-aliases steps-vec step-id))
+  (println "b"
+           (first (filterv #(= (:id %) (goto-aliases steps-vec step-id))
+                  steps-vec))
+           )
+  (first (filterv #(= (:id %) (goto-aliases steps-vec step-id))
+                  steps-vec)))
+
+(defn next-by-id [steps-vec step-id]
+  (second (drop-while #(not= (:id %) step-id) steps-vec)))
+
+(defn menu-clicked-goto [step telegram-data]
+  (when (:menu step)
+    (:-> (first (filter
+             (fn [menu-item]
+               (= telegram-data (:label menu-item)))
+             (:menu step))))))
+
+
+(defn goto-without-input? [current-step]
+  (and (not (:menu current-step))
+       (not (:save-as current-step))))
+
+(defn find-next-step [all-steps step telegram-data]
+  (println "CURRENT STEP " step)
+  (println "ALL STEPS" all-steps)
+  (cond
+
+    (menu-clicked-goto step telegram-data)
+    (do
+      (println
+        "!!!!!!!!!!!!!"
+        (find-by-id all-steps (menu-clicked-goto step telegram-data)))
+      (find-by-id all-steps (menu-clicked-goto step telegram-data)))
+
+    (:-> step)
+    (find-by-id all-steps (goto-aliases all-steps (:-> step)))
+
+    (goto-without-input? step)
+    (next-by-id all-steps (:id step))))
+
+(defn next-step! [ctx all-steps chat-id current-step telegram-data]
+  (let [step (find-next-step all-steps current-step telegram-data)]
+    (when step (change-current-step! ctx chat-id step))))
+
+(defn handle-current-step [ctx steps chat-id telegram-data]
+  (let [current-step (current-step
+                       ctx
+                       steps chat-id)
+        result (handle-step ctx current-step chat-id telegram-data)]
+    (println "telegram data " telegram-data)
+
+    (println "handle-c-s step id1 " (:id current-step))
+    {:result result
+     :next (next-step! ctx steps chat-id current-step telegram-data)}
+    ))

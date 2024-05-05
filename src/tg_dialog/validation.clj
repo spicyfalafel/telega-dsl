@@ -25,7 +25,7 @@
   (validate-label {:label "Next"}) ;=> true
 
   (validate-label
-    {:label "Я не хочу регистрироваться" :end true}) ;=> true
+    {:label "Я не хочу регистрироваться" :-> :end}) ;=> true
 
   (validate-label
     {:label "Group1" :save-as [:group] :value "group1"}) ;=> true
@@ -33,7 +33,6 @@
   (validate-label {:label 1 :value 2}) ;=> false
 
   (validate-label {:name :start
-                   :steps [{}]
                    :message "hello"}) ;=> false
   )
 
