@@ -19,16 +19,15 @@
        {:label (:label item#)
         :on-select (fn [] (dbsave (:save-as item#) (:value item#)))}))
 
+(def send-message (partial tbot/send-message bot/mybot))
+
 (defn set-command! [ctx id command-key]
   (swap! ctx (fn [m] (assoc-in m [id :CURRENT_COMMAND] command-key))))
 
 (defn handle-command
   [ctx command-key chat-id data]
+  (misc/remove-current-step! ctx chat-id)
   (set-command! ctx chat-id command-key)
-  (steps/change-current-step!
-    ctx chat-id
-    (first (command-key (:commands @ctx))))
-  (println "after changing step " (get @ctx 202476208) )
 
   #_(assert (= true (validation/validate-command command)) "wrong command")
   (let [command (command-key (:commands @ctx))
@@ -57,29 +56,25 @@
   (misc/get-current-step ctx id))
 
 (defn current-command [ctx id]
-  (println "!!!!!!!" (-> ctx deref (get id) :CURRENT_COMMAND))
-  (println "!!!!!!!!!!!!!!!!!!!!!!!!"
-           (get (:commands @ctx) (-> ctx deref (get id) :CURRENT_COMMAND)))
-
-  (get (:commands @ctx) (-> ctx deref (get id) :CURRENT_COMMAND))
-  )
-
-;; (defn current-step [ctx id]
-;;   (let [commands (:commands @ctx)] (get commands (current-command ctx commands))))
+  (get (:commands @ctx) (-> ctx deref (get id) :CURRENT_COMMAND)))
 
 (defn process-message [ctx id telegram-data]
   (let [commands (:commands @ctx)
         command-key (parse-command commands telegram-data)]
+    (println "process message " telegram-data)
     (if command-key
       (handle-command ctx command-key id telegram-data)
       (if (in-dialog? ctx id)
-        (steps/handle-current-step
-          ctx
-          (current-command ctx commands)
-          id telegram-data)
-        (tbot/send-message bot/mybot id "no such command")))))
+        (do
+          (println "current step " (misc/get-current-step ctx id))
+          (steps/handle-current-step
+            ctx
+            (current-command ctx id)
+            id telegram-data))
+        (send-message id "no such command")))))
 
 (defn handle-callback [ctx id telegram-data]
+  (println "id " id "telegram data " telegram-data)
   (tbot/answer-callback-query
     bot/mybot
     (:id telegram-data) {:text (:data telegram-data)})
@@ -92,20 +87,20 @@
     (def r req)
     (let [body (parse-body (:body req))
           data (-> body :message :text)
-          id (or (-> body :message :chat :id)
-                 (-> body :callback_query :message :chat :id))
+          chat-id (-> body :message :chat :id)
+          chat-id-from-callback (-> body :callback_query :message :chat :id)
           callback-data (-> body :callback_query)]
       (def b body)
       (if callback-data
-        (handle-callback ctx id callback-data)
-        (process-message ctx id data))
+        (handle-callback ctx chat-id-from-callback callback-data)
+        (process-message ctx chat-id data))
       {:status  200
        :headers {"Content-Type" "text/html"}
        :body   "ok"})))
 
 (defonce SERVER (atom nil))
 
-(defn configure-commands [commands]
+(defn prepare-commands [commands]
   (into {} (mapv (fn [[command-name command]]
                    [command-name (steps/add-ids command)]) commands)))
 
@@ -115,14 +110,14 @@
       (do (@SERVER)
           (reset! SERVER nil)
           :down)
-      (let [_ (reset! CTX {:commands (configure-commands commands)})
+      (let [_ (reset! CTX {:commands (prepare-commands commands)})
             server (hk-server/run-server (app CTX)
                                          {:port (or port 8080)})]
         (when server
           (reset! SERVER server))
         :up))))
 
-(start-bot example/bot-commands {})
+#_(start-bot example/bot-commands {})
 
 (comment
 

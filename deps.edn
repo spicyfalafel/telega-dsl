@@ -24,12 +24,14 @@
   ;; jmh-clojure/jmh-clojure {:mvn/version "0.4.1"}
   ;; com.cnuernber/ham-fisted {:mvn/version "2.016"}
   ;; com.aphyr/bifurcan-clj {:mvn/version "0.1.1"}
+  com.health-samurai/matcho                    {:mvn/version "0.3.11"}
   }
 
  :aliases
  {:nrepl {:jvm-opts    ["-XX:-OmitStackTraceInFastThrow"
                         "-Djdk.attach.allowAttachSelf"
                         ]
+          :extra-paths ["test"]
           :main-opts   ["-m" "nrepl.cmdline" "--middleware"
                         "[refactor-nrepl.middleware/wrap-refactor,cider.nrepl/cider-middleware]"]}
   }

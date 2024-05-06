@@ -7,7 +7,7 @@
 (set! *warn-on-reflection* true)
 
 (defn student-exists? [name-s]
-  (println "student exists stub" name-s))
+  )
 
 (def name-schema
   [:and

@@ -21,7 +21,7 @@
         steps
         (assoc steps :id "0")))))
 
-(defn menu-item->tg [{:keys [label value] :as menu-item}]
+(defn menu-item->tg [{:keys [label value]}]
   {:text label :callback_data (or value label)})
 
 (defn menu->tg [menu]
@@ -37,7 +37,7 @@
      {:inline_keyboard
       (menu->tg menu)}}))
 
-(defn call-message-fn [ctx id data message]
+(defn call-message-fn [ctx id _data message]
   (let [message-fn-res (message (misc/get-dialog-data ctx id))]
     (when (string? message-fn-res)
       (tbot/send-message bot/mybot id message-fn-res))))
@@ -75,9 +75,6 @@
       (second (drop-while #(not= % last-step) steps))
       (first steps))))
 
-(defn change-current-step! [ctx id step]
-  (swap! ctx (fn [m] (assoc-in m [id :CURRENT_STEP] step))))
-
 (defn goto-aliases [all-steps goto]
   (cond
     (= (keyword goto) :end)
@@ -87,12 +84,10 @@
     goto))
 
 (defn find-by-id [steps-vec step-id]
-  (println "findbyid " step-id)
-  (println "fbi steps " steps-vec)
-  (println "a" (goto-aliases steps-vec step-id))
-  (println "b"
-           (first (filterv #(= (:id %) (goto-aliases steps-vec step-id))
-                  steps-vec))
+  (println "step id " step-id)
+  (println "steps vec " steps-vec)
+  (println "a"
+           (goto-aliases steps-vec step-id)
            )
   (first (filterv #(= (:id %) (goto-aliases steps-vec step-id))
                   steps-vec)))
@@ -107,41 +102,49 @@
                (= telegram-data (:label menu-item)))
              (:menu step))))))
 
+(defn menu-clicked-no-goto [step telegram-data]
+  (when (:menu step)
+    (first (filter
+             (fn [menu-item]
+               (= telegram-data (:label menu-item)))
+             (:menu step)))))
 
 (defn goto-without-input? [current-step]
   (and (not (:menu current-step))
        (not (:save-as current-step))))
 
 (defn find-next-step [all-steps step telegram-data]
-  (println "CURRENT STEP " step)
-  (println "ALL STEPS" all-steps)
   (cond
 
     (menu-clicked-goto step telegram-data)
     (do
-      (println
-        "!!!!!!!!!!!!!"
-        (find-by-id all-steps (menu-clicked-goto step telegram-data)))
+      (println "im here")
+      (println "telegram data " telegram-data)
       (find-by-id all-steps (menu-clicked-goto step telegram-data)))
 
     (:-> step)
     (find-by-id all-steps (goto-aliases all-steps (:-> step)))
 
-    (goto-without-input? step)
+    (or (goto-without-input? step)
+        (menu-clicked-no-goto step telegram-data))
     (next-by-id all-steps (:id step))))
 
-(defn next-step! [ctx all-steps chat-id current-step telegram-data]
-  (let [step (find-next-step all-steps current-step telegram-data)]
-    (when step (change-current-step! ctx chat-id step))))
+(defn next-step! [ctx all-steps chat-id telegram-data]
+  (let [last-step (misc/get-current-step ctx chat-id)
+        _ (println "last step " last-step)
+        step (if last-step
+               (find-next-step all-steps last-step telegram-data)
+               (first all-steps))]
+    (println "step " step)
+    (when step
+      (misc/change-current-step! ctx chat-id step)
+      (misc/get-current-step ctx chat-id))))
 
 (defn handle-current-step [ctx steps chat-id telegram-data]
-  (let [current-step (current-step
-                       ctx
-                       steps chat-id)
-        result (handle-step ctx current-step chat-id telegram-data)]
-    (println "telegram data " telegram-data)
+  (let [next-step (next-step! ctx steps chat-id telegram-data)
+        _ (println "next step " next-step)
+        result (handle-step ctx next-step chat-id telegram-data)]
 
-    (println "handle-c-s step id1 " (:id current-step))
     {:result result
-     :next (next-step! ctx steps chat-id current-step telegram-data)}
+     #_:next}
     ))
