@@ -61,20 +61,16 @@
 (defn process-message [ctx id telegram-data]
   (let [commands (:commands @ctx)
         command-key (parse-command commands telegram-data)]
-    (println "process message " telegram-data)
     (if command-key
       (handle-command ctx command-key id telegram-data)
       (if (in-dialog? ctx id)
-        (do
-          (println "current step " (misc/get-current-step ctx id))
-          (steps/handle-current-step
+        (steps/handle-current-step
             ctx
             (current-command ctx id)
-            id telegram-data))
+            id telegram-data)
         (send-message id "no such command")))))
 
 (defn handle-callback [ctx id telegram-data]
-  (println "id " id "telegram data " telegram-data)
   (tbot/answer-callback-query
     bot/mybot
     (:id telegram-data) {:text (:data telegram-data)})

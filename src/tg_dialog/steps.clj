@@ -11,11 +11,11 @@
 (defn add-ids [steps]
   (if (vector? steps)
     (vec (map-indexed
-           (fn [idx s]
-             (if (:id s)
-               s
-               (assoc s :id (str no-id-step-prefix idx))))
-           steps))
+          (fn [idx s]
+            (if (:id s)
+              s
+              (assoc s :id (str no-id-step-prefix idx))))
+          steps))
     (when (map? steps)
       (if (:id steps)
         steps
@@ -27,15 +27,14 @@
 (defn menu->tg [menu]
   [(mapv menu-item->tg menu)])
 
-
 (defn send-menu [id text menu]
   (tbot/send-message
-    bot/mybot
-    id
-    text
-    {:reply_markup
-     {:inline_keyboard
-      (menu->tg menu)}}))
+   bot/mybot
+   id
+   text
+   {:reply_markup
+    {:inline_keyboard
+     (menu->tg menu)}}))
 
 (defn call-message-fn [ctx id _data message]
   (let [message-fn-res (message (misc/get-dialog-data ctx id))]
@@ -45,14 +44,14 @@
 (defn handle-message [ctx step id data]
   (cond
     (string? (:message step))
-    [:string #(tbot/send-message bot/mybot id (:message step))]
+    #(tbot/send-message bot/mybot id (:message step))
 
     (fn? (:message step))
-    [:fn #(call-message-fn ctx id data (:message step))]
+    #(call-message-fn ctx id data (:message step))
     :else nil))
 
 (defn handle-menu [id text step]
-  [:menu #(send-menu id text (:menu step))])
+  #(send-menu id text (:menu step)))
 
 (defn handle-step [ctx step id data]
   (let [fns (cond-> []
@@ -61,19 +60,7 @@
 
               (and (not (:menu step)) (:message step))
               (conj (handle-message ctx step id data)))]
-    (mapv (fn [f] ((second f))) fns)))
-
-(defn current-step [ctx steps chat-id]
-  (let [last-step (misc/get-current-step ctx chat-id)]
-    (if last-step
-      last-step
-      (first steps))))
-
-(defn next-step [ctx steps chat-id]
-  (let [last-step (misc/get-current-step ctx chat-id)]
-    (if last-step
-      (second (drop-while #(not= % last-step) steps))
-      (first steps))))
+    (mapv (fn [f] (f)) fns)))
 
 (defn goto-aliases [all-steps goto]
   (cond
@@ -84,11 +71,6 @@
     goto))
 
 (defn find-by-id [steps-vec step-id]
-  (println "step id " step-id)
-  (println "steps vec " steps-vec)
-  (println "a"
-           (goto-aliases steps-vec step-id)
-           )
   (first (filterv #(= (:id %) (goto-aliases steps-vec step-id))
                   steps-vec)))
 
@@ -98,16 +80,16 @@
 (defn menu-clicked-goto [step telegram-data]
   (when (:menu step)
     (:-> (first (filter
-             (fn [menu-item]
-               (= telegram-data (:label menu-item)))
-             (:menu step))))))
+                 (fn [menu-item]
+                   (= telegram-data (:label menu-item)))
+                 (:menu step))))))
 
 (defn menu-clicked-no-goto [step telegram-data]
   (when (:menu step)
     (first (filter
-             (fn [menu-item]
-               (= telegram-data (:label menu-item)))
-             (:menu step)))))
+            (fn [menu-item]
+              (= telegram-data (:label menu-item)))
+            (:menu step)))))
 
 (defn goto-without-input? [current-step]
   (and (not (:menu current-step))
@@ -117,10 +99,7 @@
   (cond
 
     (menu-clicked-goto step telegram-data)
-    (do
-      (println "im here")
-      (println "telegram data " telegram-data)
-      (find-by-id all-steps (menu-clicked-goto step telegram-data)))
+    (find-by-id all-steps (menu-clicked-goto step telegram-data))
 
     (:-> step)
     (find-by-id all-steps (goto-aliases all-steps (:-> step)))
@@ -129,22 +108,37 @@
         (menu-clicked-no-goto step telegram-data))
     (next-by-id all-steps (:id step))))
 
+(defn next-step [ctx all-steps chat-id telegram-data]
+  (let [last-step (misc/get-current-step ctx chat-id)]
+    (if last-step
+      (find-next-step all-steps last-step telegram-data)
+      (first all-steps))))
+
 (defn next-step! [ctx all-steps chat-id telegram-data]
-  (let [last-step (misc/get-current-step ctx chat-id)
-        _ (println "last step " last-step)
-        step (if last-step
-               (find-next-step all-steps last-step telegram-data)
-               (first all-steps))]
-    (println "step " step)
-    (when step
-      (misc/change-current-step! ctx chat-id step)
+  (let [last-step (next-step ctx all-steps chat-id telegram-data)]
+    (when last-step
+      (misc/change-current-step! ctx chat-id last-step)
       (misc/get-current-step ctx chat-id))))
 
+(defn save-menu-item [ctx id menu-item telegram-data]
+  (when (and (= telegram-data (:label menu-item)) (:save-as menu-item))
+    (misc/add-dialog-data! ctx id
+                           (:save-as menu-item)
+                           (or (:value menu-item)
+                               (:label menu-item)))))
+
+(defn handle-save [ctx id last-step telegram-data]
+  (when (:menu last-step)
+    (doseq [menu-item (:menu last-step)]
+      (save-menu-item ctx id menu-item telegram-data)))
+
+  (when (:save-as last-step)
+    (misc/add-dialog-data! ctx id (:save-as last-step) telegram-data)))
+
 (defn handle-current-step [ctx steps chat-id telegram-data]
-  (let [next-step (next-step! ctx steps chat-id telegram-data)
-        _ (println "next step " next-step)
+  (let [last-step (misc/get-current-step ctx chat-id)
+        _ (handle-save ctx chat-id last-step telegram-data)
+        next-step (next-step! ctx steps chat-id telegram-data)
         result (handle-step ctx next-step chat-id telegram-data)]
 
-    {:result result
-     #_:next}
-    ))
+    {:result result}))

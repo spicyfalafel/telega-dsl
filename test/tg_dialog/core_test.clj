@@ -318,7 +318,7 @@
         :text "m-2"},
        :ok true}]})
 
-  #_(matcho/match
+  (matcho/match
    (sut/process-message
     ctx
     me

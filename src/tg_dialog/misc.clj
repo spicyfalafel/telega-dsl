@@ -11,3 +11,6 @@
 
 (defn get-dialog-data [ctx id]
   (get-in @ctx [id :DIALOG_DATA]))
+
+(defn add-dialog-data! [ctx id k data]
+  (swap! ctx (fn [m] (assoc-in m (into [id :DIALOG_DATA] k) data))))
