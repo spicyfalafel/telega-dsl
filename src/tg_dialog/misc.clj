@@ -19,7 +19,10 @@
     (swap! ctx (fn [m] (assoc-in m (into [id :DIALOG_DATA] k) data)))))
 
 (defn change-dialog-data! [ctx id data]
-  (swap! ctx (fn [m] (assoc-in m [id :DIALOG_DATA] data))))
+  (swap! ctx (fn [m]
+               (-> m
+                   (update id dissoc :DIALOG_DATA)
+                   (assoc-in [id :DIALOG_DATA] data)))))
 
 (defn get-data-paths-from-menu [menu]
   (when menu
@@ -43,15 +46,14 @@
     (update-in m (pop path) dissoc (peek path))))
 
 (defn remove-data-paths! [ctx id command-key]
-  (let [command (command-key (:commands ctx))
-        data-from-command (get-all-data-paths command)]
-    (change-dialog-data!
-      ctx id
-      (reduce
-        (fn [acc path]
-          (dissoc-path acc path))
-        (get-dialog-data ctx id)
-        data-from-command))))
+  (let [command (command-key (:commands @ctx))
+        data-from-command (get-all-data-paths command)
+        data (reduce
+               (fn [acc path]
+                 (dissoc-path acc path))
+               (get-dialog-data ctx id)
+               data-from-command)]
+    (change-dialog-data! ctx id data)))
 
 (defn index-of [x coll]
   (let [idx? (fn [i a] (when (= x a) i))]
