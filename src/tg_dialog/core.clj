@@ -104,13 +104,14 @@
 
 (defn- webhook [ctx {:keys [port url]}]
   (let [server (hk-server/run-server (app ctx) {:port (or port 8080)})]
-    (tbot/set-webhook (:bot @ctx) {:url url
-                                   :content-type :multipart})
+    (when url
+      (tbot/set-webhook (:bot @ctx) {:url url
+                                     :content-type :multipart}))
     (t/log! "Server ready")
     (when server
       (reset! SERVER server))))
 
-(defn start-bot [commands & [{:keys [type token] :as opts}]]
+(defn start-bot [commands & [{:keys [type token url] :as opts}]]
   (if @SERVER
     (do (@SERVER)
         (reset! SERVER nil)
@@ -118,7 +119,7 @@
     (let [bot (tbot/create token)
           _ (reset! CTX {:commands (commands/prepare-commands commands)
                          :bot bot})]
-      (tbot/delete-webhook bot)
+      (when url (tbot/delete-webhook bot))
       (if (= :polling type)
         (polling CTX opts)
         (webhook CTX opts))
