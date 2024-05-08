@@ -22,6 +22,7 @@
 (defn handle-command
   [ctx command-key chat-id data]
   (misc/remove-current-step! ctx chat-id)
+  (misc/remove-data-paths! ctx chat-id command-key)
   (set-command! ctx chat-id command-key)
 
   #_(assert (= true (validation/validate-command command)) "wrong command")
@@ -39,8 +40,7 @@
   (json/read-value body json/keyword-keys-object-mapper))
 
 (defn parse-command [commands user-text]
-  (println "u text " user-text)
-  (when (str/starts-with? user-text "/")
+  (when (and user-text (str/starts-with? user-text "/"))
     (first (filterv #(= % (keyword (subs user-text 1)))
                     (keys commands)))))
 
@@ -54,7 +54,6 @@
   (get (:commands @ctx) (-> ctx deref (get id) :CURRENT_COMMAND)))
 
 (defn process-message [ctx id message]
-  (println "message  " message)
   (let [commands (:commands @ctx)
         command-key (parse-command commands (:text message))]
     (if command-key
@@ -69,14 +68,13 @@
 (defn handle-callback [ctx id telegram-data]
   (tbot/answer-callback-query
    bot/mybot
-   (:id telegram-data) {:text (:data telegram-data)})
-  (process-message ctx id (:data telegram-data)))
+   (:id telegram-data) {:text "ok" #_(:data telegram-data)})
+  (process-message ctx id {:text (:data telegram-data)}))
 
 (defn app [ctx]
   (assert (map? (:commands @ctx)) "expected commands to be a map")
   (println "server is starting1")
   (fn [req]
-    (def r req)
     (let [body (parse-body (:body req))
           message (:message body)
           chat-id (-> body :message :chat :id)
@@ -96,12 +94,14 @@
   (cond-> step
 
     (:menu step)
-    (update :menu (fn [menu]
-                    (mapv
-                     (fn [menu-item]
-                       (if (:value menu-item)
-                         menu-item
-                         (assoc menu-item :value (:label menu-item)))) menu)))))
+    (update
+      :menu
+      (fn [menu]
+        (mapv
+          (fn [menu-item]
+            (if (some? (:value menu-item))
+              (update menu-item :value str)
+              (assoc menu-item :value (:label menu-item)))) menu)))))
 
 (defn prepare-steps [steps]
   (if (vector? steps) (mapv add-menu-values steps) steps))

@@ -26,8 +26,8 @@
 
 (def bot-commands
   (sut/prepare-commands
-    {:start start-command
-     :help help-command}))
+   {:start start-command
+    :help help-command}))
 
 (def me 202476208)
 
@@ -116,7 +116,6 @@
     {})
     {:id 2})
 
-
   (matcho/match
    (steps/next-step!
     steps-atom [{:id 1 :-> 3} {:id 2} {:id 3 :-> 1}]
@@ -135,15 +134,12 @@
    (sut/handle-command (atom {:commands bot-commands})
                        :start
                        me {})
-   {:result
-    {:chat
-     {:id 202476208},
-     :text "m-1"
-     :reply_markup
-     {:inline_keyboard
-      [[{:callback_data "menu-1", :text "menu-1"}
-        {:callback_data "menu-2", :text "menu-2"}]]}}
-    :ok true})
+    [{:result
+     {:text "m-1"
+      :reply_markup
+      {:inline_keyboard
+       [[{:callback_data "menu-1", :text "menu-1"}
+         {:callback_data "menu-2", :text "menu-2"}]]}}}])
 
   (matcho/match
    (sut/process-message (atom {:commands bot-commands}) me {:text "/command"})
@@ -155,7 +151,7 @@
 
   (matcho/match
    (sut/process-message (atom {:commands bot-commands}) me {:text "/start"})
-    {:result {:text "m-1"}, :ok true})
+    [{:result {:text "m-1"}, :ok true}])
 
   ;; /start -> step1
   ;; send text & menu => wait, step1
@@ -163,12 +159,19 @@
 
   (matcho/match
    (sut/prepare-commands {:help {:id "hello"}
-                          :help1 {}
+                          :help1 [{:message "a"
+                                   :save-as [:abc]
+                                   :menu [{:label "a"}
+                                          {:label "b" :value false}]}]
                           :start [{:id "world"}
                                   {}
                                   {}]})
+
     {:help {:id "hello"},
-     :help1 {:id string?}
+     :help1 [{:id string?
+              :save-as [:abc]
+              :menu [{:label "a" :value "a"}
+                     {:label "b" :value "false"}]}]
      :start [{:id "world"} {:id "no-id-step1"} {:id "no-id-step2"}]})
 
   (matcho/match
@@ -227,19 +230,15 @@
 
 (deftest whole
   (def ctx (atom {:commands bot-commands}))
+
   (matcho/match
-   (sut/process-message
-    ctx
-    me
-    "/start")
-    {:result
-     [{:result
-       {:reply_markup
-        {:inline_keyboard
-         [[{:callback_data "menu-1", :text "menu-1"}
-           {:callback_data "menu-2", :text "menu-2"}]]},
-        :text "m-1"},
-       :ok true}]})
+   (sut/process-message ctx me {:text "/start"})
+    [{:result
+     {:reply_markup
+      {:inline_keyboard
+       [[{:callback_data "menu-1", :text "menu-1"}
+         {:callback_data "menu-2", :text "menu-2"}]]},
+      :text "m-1"}}])
 
   (matcho/match
    @ctx
@@ -258,41 +257,134 @@
    (sut/process-message
     ctx
     me
-    "menu-1")
-    {:result
-     [{:result
-       {:reply_markup
-        {:inline_keyboard
-         [[{:callback_data "value-2-1", :text "menu-2-1"}
-           {:callback_data "menu-2-2", :text "menu-2-2"}
-           {:callback_data "menu-2-3", :text "menu-2-3"}]]},
-        :text "m-2"},
-       :ok true}]})
-
-  (matcho/match
-   (sut/process-message
-    ctx
-    me
-    "menu-2-2")
-   {:result
+    {:text "menu-1"})
     [{:result
-      {:text "hello! menu menu-2-2"},
-      :ok true}]})
+     {:reply_markup
+      {:inline_keyboard
+       [[{:callback_data "value-2-1", :text "menu-2-1"}
+         {:callback_data "menu-2-2", :text "menu-2-2"}
+         {:callback_data "menu-2-3", :text "menu-2-3"}]]},
+      :text "m-2"},
+     :ok true}])
 
   (matcho/match
    (sut/process-message
     ctx
     me
-    "/start")
-    {:result
-     [{:result
-       {:reply_markup
-        {:inline_keyboard
-         [[{:callback_data "menu-1", :text "menu-1"}
-           {:callback_data "menu-2", :text "menu-2"}]]},
-        :text "m-1"},
-       :ok true}]})
+    {:text "menu-2-2"})
+    [{:result
+     {:text "hello! menu menu-2-2"},
+     :ok true}])
+
+  (matcho/match
+   (sut/process-message
+    ctx
+    me
+    {:text "/start"})
+    [{:result
+     {:reply_markup
+      {:inline_keyboard
+       [[{:callback_data "menu-1", :text "menu-1"}
+         {:callback_data "menu-2", :text "menu-2"}]]},
+      :text "m-1"},
+     :ok true}])
+
+  (matcho/match
+   (misc/get-all-data-paths
+    [{:save-as [:a :b]}
+     {:menu [{:save-as [:d :e]}
+             {:save-as [:x]}
+             {:label [:g :v]}]}
+
+     {:menu [{} {}]}
+     {}])
+    #{[:a :b] [:d :e] [:x]})
+
+  (is (= (misc/dissoc-path {:a {:b 1}} [:a :b])
+         {:a {}}))
+
+  (is (= {} (misc/dissoc-path {:a 1} [:a])))
+
+  (def a (atom {:commands {:start [{:save-as [:a :b]}
+                                   {:menu [{:save-as [:d :e]}
+                                           {:save-as [:x]}
+                                           {:label [:g :v]}]}
+
+                                   {:menu [{} {}]}
+                                   {}]}
+                1
+                {:DIALOG_DATA {:a {:b 10}
+                               :c 5
+                               :x 100
+                               :z {:y 6}
+                               :d {:e 1000}}}}))
+  (misc/remove-data-paths! a 1 :start)
+
+  (matcho/match
+   @a
+    {:commands
+     {}
+     1 {:DIALOG_DATA {:c 5 :z {:y 6}}}})
+
+  (matcho/match
+   (steps/menu->tg [{:label "Да"  :value true}
+                    {:label "Нет" :value false}])
+    [[{:text "Да", :callback_data "true"}
+      {:text "Нет", :callback_data "false"}]]))
+
+(deftest corner
+  (def steps
+    [{:message "a"}
+     {:message "b"
+      :menu [{:label "n" :value false}
+             {:label "y" :value true}
+             ]
+      :save-as [:bio?]}
+     {:when (fn [ctx] (= true (:bio? ctx)))
+      :message "c"}
+     {:message "end"}])
+
+  (def ctx (atom {:commands (sut/prepare-commands {:start steps})}))
+
+  (matcho/match
+   (sut/process-message ctx me {:text "/start"})
+    [{:result {:text "a"}}
+     {:result {:reply_markup
+               {:inline_keyboard
+                [[{:callback_data "false", :text "n"}
+                  {:callback_data "true", :text "y"}]]},
+               :text "b"}} nil])
+
+  (matcho/match
+   (sut/process-message ctx me {:text "n"})
+   [{:result {:text "end"}, :ok true} nil])
+
+  (matcho/match
+   @ctx
+   {me {:DIALOG_DATA {:bio? false}}})
+
+  (matcho/match
+   (sut/process-message ctx me {:text "/start"})
+    [{:result {:text "a"}}
+     {:result {:reply_markup
+               {:inline_keyboard
+                [[{:callback_data "false", :text "n"}
+                  {:callback_data "true", :text "y"}]]},
+               :text "b"}} nil])
+
+  (matcho/match
+   (sut/process-message ctx me {:text "y"})
+   [{:result {:text "c"}}
+    {:result {:text "end"}}
+    nil])
+
+
+  (matcho/match
+   (steps/text->value
+    [{:label "a" :value "b"}
+     {:label "c" :value "false"}]
+    "c")
+   "false"
+   )
 
   )
-
-

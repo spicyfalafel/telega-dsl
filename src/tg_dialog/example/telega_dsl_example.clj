@@ -28,54 +28,61 @@
 (def bot-commands
  {:start [{:message "Добро пожаловать! Давайте начнем регистрацию."}
 
-          {:id "ask-group"
-           :message "Выберите вашу группу:"
-           :menu (fn [ctx]
-                  (conj (for [group (:groups ctx)]
-                         {:label (str "Группа " group) :save-as [:group] :value group})
-                        {:label "Я не хочу регистрироваться"
-                         :save-as [:skip-registration]
-                         :value true
-                         :-> :end}))}
+          {:message "Выберите вашу группу:"
+           :menu [{:label "P34111" :save-as [:group]}
+                  {:label "P34112" :save-as [:group]}
+                  {:label "P34113" :save-as [:group]}
+                  {:label "Я не хочу регистрироваться"
+                   :save-as [:skip-registration]
+                   :value true
+                   :-> :end}]}
 
-          {:id "ask-name"
-           :message "Введите ваше имя и фамилию:"
-           :validate validate-name
+          {:message "Введите ваше имя и фамилию:"
            :save-as [:name]
-           :on-back {:action (fn [ctx] (:name ctx))
-                     :message "Имя и фамилия удалены."}
-           :back true}
+           ;; :validate validate-name
+           ;; :on-back {:action (fn [ctx] (:name ctx))
+           ;;           :message "Имя и фамилия удалены."}
+           ;; :back true
+           }
 
-          {:id "ask-bio"
-           :message "Хотите рассказать о себе?"
-           :menu [{:label "Да" :save-as [:bio?] :value true}
-                  {:label "Нет" :save-as [:bio?] :value false}]
-           :on-back {:action (fn [ctx] (:bio? ctx))
-                     :message "Информация о биографии удалена."}
-           :back true}
+          {:message "Хотите рассказать о себе?"
+           :menu [{:label "Да"  :value true}
+                  {:label "Нет" :value false}]
+           :save-as [:bio?]
+           ;; :on-back {:action (fn [ctx] (:bio? ctx))
+           ;;           :message "Информация о биографии удалена."}
+           ;; :back true
+           }
 
-          {:id "write-bio"
+          {:when (fn [ctx] (= true (:bio? ctx)))
            :message "Расскажите о своих увлечениях в IT:"
-           :validate (fn [bio]
-                      (when (<= (count bio) 50)
-                       {:error/message "Описание должно быть длиннее 50 символов."}))
+           ;; :validate (fn [bio]
+           ;;            (when (<= (count bio) 50)
+           ;;             {:error/message "Описание должно быть длиннее 50 символов."}))
            :save-as [:bio]
-           :back true}
+           ;; :back true
+           }
 
-          {:id "confirm-bio"
-           :save-as [:bio]
-           :message (fn [ctx] (if-let [bio (:bio ctx)]
-                            (str "Ваше описание: " bio)
-                            "Введите ваше описание"))
+          {:message (fn [ctx]
+                     (if-let [bio (:bio ctx)]
+                      (str "Ваше описание: " bio)
+                      "Описание не введено"))
            :menu [{:label "Готово"}]
-           :back "ask-bio"}
+           ;; :back "ask-bio"
 
-          {:id "register-done"
-           :message (fn [ctx] (if (:skip-registration ctx)
-                            "Регистрация пропущена."
-                            (if (:bio? ctx)
-                             "Регистрация пройдена успешно. Спасибо за описание!"
-                             "Регистрация пройдена успешно.")))}]
+           }
+
+          {:message
+           (fn [ctx]
+            (if (:skip-registration ctx)
+             "Регистрация пропущена."
+             (if (:bio? ctx)
+              "Регистрация пройдена успешно. Спасибо за описание!"
+              "Регистрация пройдена успешно.")))}]
+
+  :whoami [{:message (fn [ctx]
+                      (format "Группа: %s\nИмя: %s\nО вас: %s"
+                              (:group ctx) (:name ctx) (:bio ctx)))}]
 
   :help [{:message "Этот бот помогает студентам пройти регистрацию в системе обучения."}]})
 

@@ -21,8 +21,12 @@
         steps
         (assoc steps :id "0")))))
 
-(defn menu-item->tg [{:keys [label value]}]
-  {:text label :callback_data (or value label)})
+(defn menu-item->tg [menu-item]
+  {:text (:label menu-item) :callback_data
+   (str
+    (if (nil? (:value menu-item))
+      (:label menu-item)
+      (:value menu-item)))})
 
 (defn menu->tg [menu]
   [(mapv menu-item->tg menu)])
@@ -117,28 +121,42 @@
       (misc/get-current-step ctx chat-id))))
 
 (defn save-menu-item [ctx id menu-item telegram-data]
-  (when (and (= telegram-data (:value menu-item)) (:save-as menu-item))
+  (when (and (or (= telegram-data (:value menu-item))
+                 (= telegram-data (:label menu-item))) (:save-as menu-item))
     (misc/add-dialog-data! ctx id
                            (:save-as menu-item)
-                           (or (:value menu-item)
-                               (:label menu-item)))))
+                           (if (some? (:value menu-item))
+                             (:value menu-item)
+                             (:label menu-item)))))
 
-(defn handle-save [ctx id last-step telegram-data]
+(defn text->value [menu text]
+  (->> menu
+       (filterv #(= (:label %) text))
+       first
+       :value))
+
+(defn handle-save [ctx id last-step text]
   (when (:menu last-step)
     (doseq [menu-item (:menu last-step)]
-      (save-menu-item ctx id menu-item telegram-data)))
+      (save-menu-item ctx id menu-item text)))
 
-  (when (:save-as last-step)
-    (misc/add-dialog-data! ctx id (:save-as last-step) telegram-data)))
+  (cond
+    (and (:menu last-step) (:save-as last-step))
+    (misc/add-dialog-data! ctx id (:save-as last-step)
+                           (or (text->value (:menu last-step) text) text))
+    (:save-as last-step)
+    (misc/add-dialog-data! ctx id (:save-as last-step) text)))
 
-(defn continue-after-step? [{:keys [message save-as menu]}]
-  (and message (not save-as) (not menu)))
+(defn continue-after-step? [{:keys [message save-as menu]} when-skipped?]
+  (or when-skipped? (and message (not save-as) (not menu))))
 
 (defn handle-current-step [ctx steps chat-id message]
   (let [last-step (misc/get-current-step ctx chat-id)
         _ (handle-save ctx chat-id last-step (:text message))
         next-step (next-step! ctx steps chat-id (:text message))
-        result (handle-send ctx next-step chat-id message)]
-    (when (continue-after-step? next-step)
-      (handle-current-step ctx steps chat-id message))
-    result))
+        result (handle-send ctx next-step chat-id message)
+        when-skipped? (and (:when next-step) (not result))]
+    (if (continue-after-step? next-step when-skipped?)
+      (vec (remove nil? (concat [result] (handle-current-step ctx steps chat-id message))))
+      [result])))
+
