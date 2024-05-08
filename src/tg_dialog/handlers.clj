@@ -41,14 +41,14 @@
     true))
 
 (defn menu-item->tg [menu-item]
-  {:text (:label menu-item) :callback_data
-   (str
-    (if (nil? (:value menu-item))
-      (:label menu-item)
-      (:value menu-item)))})
+  [{:text (:label menu-item) :callback_data
+    (str
+      (if (nil? (:value menu-item))
+        (:label menu-item)
+        (:value menu-item)))}])
 
 (defn menu->tg [menu]
-  [(mapv menu-item->tg menu)])
+  (mapv menu-item->tg menu))
 
 (defn handle-send [ctx step id message]
   (when (and step

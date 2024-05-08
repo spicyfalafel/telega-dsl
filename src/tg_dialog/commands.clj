@@ -31,11 +31,18 @@
             (assoc menu-item :value (:label menu-item)))) menu)))))
 
 (defn add-back-button [steps step]
-  (if (:back step)
-    (update step :menu conj
-            {:label "Back"
-             :-> (:id (steps/prev-step-by-index steps step))})
-    step))
+  (let [back  (:back step)]
+    (if back
+      (update step :menu
+              conj
+              {:label "Back"
+               :-> (cond
+                     (true? back)
+                     (:id (steps/prev-step-by-index steps step))
+
+                     (string? back)
+                     back)})
+      step)))
 
 (defn prepare-steps [steps]
   (if (vector? steps)
