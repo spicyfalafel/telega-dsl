@@ -21,4 +21,12 @@
                         "-Djdk.attach.allowAttachSelf"]
           :extra-paths ["test"]
           :main-opts   ["-m" "nrepl.cmdline" "--middleware"
-                        "[refactor-nrepl.middleware/wrap-refactor,cider.nrepl/cider-middleware]"]}}}
+                        "[refactor-nrepl.middleware/wrap-refactor,cider.nrepl/cider-middleware]"]}
+
+  :test {:extra-paths ["test"]
+         :extra-deps {io.github.cognitect-labs/test-runner
+                      {:git/tag "v0.5.1" :git/sha "dfb30dd"}
+                      com.health-samurai/matcho
+                      {:mvn/version "0.3.11"}}
+         :main-opts ["-m" "cognitect.test-runner"]
+         :exec-fn cognitect.test-runner.api/test}}}
