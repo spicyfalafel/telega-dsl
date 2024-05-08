@@ -27,8 +27,15 @@
 (defn menu->tg [menu]
   [(mapv menu-item->tg menu)])
 
+(defn handle-when [ctx id step]
+  (if (:when step)
+    (let [f (:when step)]
+      (f (misc/get-dialog-data ctx id)))
+    true))
+
 (defn handle-send [ctx step id message]
-  (when step
+  (when (and step
+             (handle-when ctx id step))
     (let [params (cond-> {}
                    (:menu step)
                    (merge {:reply_markup

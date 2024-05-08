@@ -33,8 +33,6 @@
          (= "No" (:like-bots ctx))
          (str " you don't like to write bots, so sad...")))}]})
 
- ; reply
- ; when
 
 (defn -main []
  (tg-dialog/start-bot bot-commands {:token (System/getenv "BOT_TOKEN")
