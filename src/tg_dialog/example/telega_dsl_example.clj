@@ -42,7 +42,7 @@
            ;; :validate validate-name
            ;; :on-back {:action (fn [ctx] (:name ctx))
            ;;           :message "Имя и фамилия удалены."}
-           ;; :back true
+           :back true
            }
 
           {:message "Хотите рассказать о себе?"
@@ -51,7 +51,7 @@
            :save-as [:bio?]
            ;; :on-back {:action (fn [ctx] (:bio? ctx))
            ;;           :message "Информация о биографии удалена."}
-           ;; :back true
+           :back true
            }
 
           {:when (fn [ctx] (= true (:bio? ctx)))
@@ -60,17 +60,14 @@
            ;;            (when (<= (count bio) 50)
            ;;             {:error/message "Описание должно быть длиннее 50 символов."}))
            :save-as [:bio]
-           ;; :back true
-           }
+           :back true}
 
           {:message (fn [ctx]
                      (if-let [bio (:bio ctx)]
                       (str "Ваше описание: " bio)
                       "Описание не введено"))
            :menu [{:label "Готово"}]
-           ;; :back "ask-bio"
-
-           }
+           :back "ask-bio"}
 
           {:message
            (fn [ctx]

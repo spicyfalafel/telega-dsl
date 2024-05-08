@@ -103,8 +103,17 @@
               (update menu-item :value str)
               (assoc menu-item :value (:label menu-item)))) menu)))))
 
+(defn add-back-button [steps step]
+  (if (:back step)
+    (update step :menu conj
+            {:label "Back"
+             :-> (:id (steps/prev-step-by-index steps step))})
+   step))
+
 (defn prepare-steps [steps]
-  (if (vector? steps) (mapv add-menu-values steps) steps))
+  (if (vector? steps)
+    (mapv (comp add-menu-values (partial add-back-button steps)) steps)
+    steps))
 
 (defn prepare-commands [commands]
   (->> commands

@@ -92,6 +92,11 @@
   (and (not (:menu current-step))
        (not (:save-as current-step))))
 
+(defn prev-step-by-index [steps step]
+  (let [idx (misc/index-of step steps)]
+    (when (> idx 0)
+      (nth steps (dec idx)))))
+
 (defn find-next-step [all-steps step telegram-data]
   (cond
 

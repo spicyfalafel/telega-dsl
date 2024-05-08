@@ -52,3 +52,7 @@
           (dissoc-path acc path))
         (get-dialog-data ctx id)
         data-from-command))))
+
+(defn index-of [x coll]
+  (let [idx? (fn [i a] (when (= x a) i))]
+  (first (keep-indexed idx? coll))))
