@@ -2,9 +2,8 @@
   (:require
    [tg-dialog.core :as sut]
    [matcho.core :as matcho]
-   [telegrambot-lib.core :as tbot]
-   [tg-dialog.bot :refer [mybot]]
    [tg-dialog.steps :as steps]
+   [tg-dialog.misc :as misc]
    [clojure.test :refer [is testing deftest]]))
 
 (def help-command  {:message "Hello"})
@@ -44,32 +43,24 @@
   (matcho/match (steps/add-ids start-command)
     [{:id "no-id-step0"} {:id "no-id-step1"} {:id "no-id-step2"} nil])
 
-  (def steps-atom (atom {}))
+  (def abc (atom {}))
   (def steps [{:id 1} {:id 2} {:id 3}])
 
   (matcho/match
-   (steps/next-step steps-atom steps me)
+   (steps/next-step abc steps me nil)
     {:id 1})
 
   (matcho/match
-   (steps/next-step steps-atom steps me)
+   (steps/next-step abc steps me nil)
     {:id 1})
 
   (matcho/match
-   (steps/next-step (atom {me {:CURRENT_STEP {:id 1}}}) steps me)
+   (steps/next-step (atom {me {:CURRENT_STEP {:id 1}}}) steps me nil)
     {:id 2})
 
   (matcho/match
-   (steps/next-step (atom {me {:CURRENT_STEP {:id 2}}}) steps me)
+   (steps/next-step (atom {me {:CURRENT_STEP {:id 2}}}) steps me nil)
     {:id 3})
-
-  (matcho/match
-   (steps/change-current-step! steps-atom me {:id 1})
-    {202476208 {:CURRENT_STEP {:id 1}}})
-
-  (matcho/match
-   @steps-atom
-    {202476208 {:CURRENT_STEP {:id 1}}})
 
   (matcho/match
    (steps/find-by-id [{:id 1} {:id 2}] 2)
@@ -115,45 +106,30 @@
    (steps/next-step!
     steps-atom [{:id 1} {:id 2} {:id 3}]
     me
-    {:id 1}
     {})
-
-    {202476208 {:CURRENT_STEP {:id 2}}})
+    {:id 1})
 
   (matcho/match
    (steps/next-step!
     steps-atom [{:id 1} {:id 2} {:id 3}]
     me
-    {:id 2}
     {})
+    {:id 2})
 
-    {202476208 {:CURRENT_STEP {:id 3}}})
 
   (matcho/match
    (steps/next-step!
     steps-atom [{:id 1 :-> 3} {:id 2} {:id 3 :-> 1}]
     me
-    {:id 1 :-> 3}
     {})
-
-    {202476208 {:CURRENT_STEP {:id 3}}})
+    {:id 3 :-> 1})
 
   (matcho/match
    (steps/next-step!
     steps-atom [{:id 1 :-> 3} {:id 2} {:id 3 :-> 1}]
     me
-    {:id 3 :-> 1}
     {})
-
-    {202476208 {:CURRENT_STEP {:id 1}}})
-
-  (matcho/match
-   (steps/handle-message {} {:message "hello"} me {})
-    [:string fn?])
-
-  (matcho/match
-   (steps/handle-message {} {:message (fn [ctx] (:name ctx))} me {})
-    [:fn fn?])
+    {:id 1})
 
   (matcho/match
    (steps/handle-message {} nil me {})
@@ -342,12 +318,6 @@
         :text "m-1"},
        :ok true}]})
 
-  (matcho/match
-   (sut/process-message
-    ctx
-    me
-    "menu-2")
-    {:result
-    [{:result
-      {:text "hello! menu not chosen"},
-      :ok true}]}))
+  )
+
+

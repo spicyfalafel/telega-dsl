@@ -1,6 +1,5 @@
 (ns tg-dialog.example.aiogram-example
   (:require
-   [clojure.string :as str]
    [tg-dialog.core :as tg-dialog]))
 
 (def bot-commands
@@ -26,13 +25,16 @@
 
     {:message
      (fn [ctx]
-       (cond-> (str/format "I'll keep you in mind, %s," (:name ctx))
+       (cond-> (format "I'll keep you in mind, %s," (:name ctx))
 
          (and (:language ctx) (= "Yes" (:like-bots ctx)))
-         (str (str/format " you like to write bots with %s" (:language ctx)))
+         (str (format " you like to write bots with %s" (:language ctx)))
 
          (= "No" (:like-bots ctx))
          (str " you don't like to write bots, so sad...")))}]})
+
+ ; reply
+ ; when
 
 (defn -main []
  (tg-dialog/start-bot bot-commands {:token (System/getenv "BOT_TOKEN")

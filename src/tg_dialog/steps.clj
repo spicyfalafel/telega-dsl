@@ -108,6 +108,9 @@
 
     (or (goto-without-input? step)
         (menu-clicked-no-goto step telegram-data))
+    (next-by-id all-steps (:id step))
+
+    telegram-data
     (next-by-id all-steps (:id step))))
 
 (defn next-step [ctx all-steps chat-id telegram-data]
@@ -137,9 +140,14 @@
   (when (:save-as last-step)
     (misc/add-dialog-data! ctx id (:save-as last-step) telegram-data)))
 
+(defn continue-after-step? [{:keys [message save-as menu]}]
+  (and message (not save-as) (not menu)))
+
 (defn handle-current-step [ctx steps chat-id telegram-data]
   (let [last-step (misc/get-current-step ctx chat-id)
         _ (handle-save ctx chat-id last-step telegram-data)
         next-step (next-step! ctx steps chat-id telegram-data)
         result (handle-step ctx next-step chat-id telegram-data)]
+    (when (continue-after-step? next-step)
+      (handle-current-step ctx steps chat-id telegram-data))
     {:result result}))
