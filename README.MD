@@ -30,14 +30,6 @@
 
 (set! *warn-on-reflection* true)
 
-(defn dbget [path]
-  (println "Getting stub " path))
-
-(defn dbdelete [path]
-  (println "Deleting stub " path))
-
-(defn student-exists? [name-s]
-  (println "student exists stub" name-s))
 
 (def name-schema
   [:and

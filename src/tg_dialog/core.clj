@@ -1,23 +1,18 @@
 (ns tg-dialog.core
   (:require
-    [telegrambot-lib.core :as tbot]
-    #_[malli.core :as m]
-    [clojure.string :as str]
-    [jsonista.core :as json]
-    [tg-dialog.misc :as misc]
-    [tg-dialog.example.example-group :as example]
-    [tg-dialog.bot :as bot]
-    [tg-dialog.steps :as steps]
-    [org.httpkit.client :as client]
-    [org.httpkit.server :as hk-server]
-    #_[malli.generator :as mg]))
+   [telegrambot-lib.core :as tbot]
+   #_[malli.core :as m]
+   [clojure.string :as str]
+   [jsonista.core :as json]
+   [tg-dialog.misc :as misc]
+   [tg-dialog.example.example-group :as example]
+   [tg-dialog.bot :as bot]
+   [tg-dialog.steps :as steps]
+   [org.httpkit.client :as client]
+   [org.httpkit.server :as hk-server]
+   #_[malli.generator :as mg]))
 
 (set! *warn-on-reflection* true)
-
-#_(defmacro menu [items]
-    `(for [item# ~items]
-       {:label (:label item#)
-        :on-select (fn [] (dbsave (:save-as item#) (:value item#)))}))
 
 (def send-message (partial tbot/send-message bot/mybot))
 
@@ -48,8 +43,7 @@
     (first (filterv #(= % (keyword (subs user-text 1)))
                     (keys commands)))))
 
-(def CTX (atom {
-                ;; 1234 {:CURRENT_STEP {} :DIALOG_DATA {} }
+(def CTX (atom {;; 1234 {:CURRENT_STEP {} :DIALOG_DATA {} }
                 }))
 
 (defn in-dialog? [ctx id]
@@ -65,15 +59,15 @@
       (handle-command ctx command-key id telegram-data)
       (if (in-dialog? ctx id)
         (steps/handle-current-step
-            ctx
-            (current-command ctx id)
-            id telegram-data)
+         ctx
+         (current-command ctx id)
+         id telegram-data)
         (send-message id "no such command")))))
 
 (defn handle-callback [ctx id telegram-data]
   (tbot/answer-callback-query
-    bot/mybot
-    (:id telegram-data) {:text (:data telegram-data)})
+   bot/mybot
+   (:id telegram-data) {:text (:data telegram-data)})
   (process-message ctx id (:data telegram-data)))
 
 (defn app [ctx]
@@ -96,9 +90,28 @@
 
 (defonce SERVER (atom nil))
 
+(defn add-menu-values [step]
+  (cond-> step
+
+    (:menu step)
+    (update :menu (fn [menu]
+                    (mapv
+                     (fn [menu-item]
+                       (if (:value menu-item)
+                         menu-item
+                         (assoc menu-item :value (:label menu-item)))) menu)))))
+
+(defn prepare-steps [steps]
+  (if (vector? steps) (mapv add-menu-values steps) steps))
+
 (defn prepare-commands [commands]
-  (into {} (mapv (fn [[command-name command]]
-                   [command-name (steps/add-ids command)]) commands)))
+  (->> commands
+       (mapv (fn [[command-name command]]
+               [command-name (-> command
+                                 (steps/add-ids)
+                                 (add-menu-values)
+                                 (prepare-steps))]))
+       (into {})))
 
 (defn start-bot [commands & [opts]]
   (let [port (:port opts)]
@@ -117,14 +130,19 @@
 
 (comment
 
-  (def ngrok-url "https://106e-188-243-183-57.ngrok-free.app")
+  (def ngrok-url "https://f3c4-188-243-183-57.ngrok-free.app")
   (def token (System/getenv "BOT_TOKEN"))
 
   ;;https://api.telegram.org/bot{my_bot_token}/setWebhook?url={url_to_send_updates_to}
-  (let [token token
-        hook-url ngrok-url]
-    [@(client/request {:url (str "https://api.telegram.org/bot" token "/deleteWebhook")
-                       :query-params {:drop_pending_updates true}})
+  [@(client/request {:url (str "https://api.telegram.org/bot" token "/deleteWebhook")
+                     :query-params {:drop_pending_updates true}})
 
-     @(client/request {:url (str "https://api.telegram.org/bot" token "/setWebhook")
-                       :query-params {:url (str hook-url)}})]))
+   @(client/request {:url (str "https://api.telegram.org/bot" token "/setWebhook")
+                     :query-params
+                     {:url (str ngrok-url)
+                      :allowed_updates
+                      []
+
+                      #_["message", "edited_channel_post", "callback_query"]}})
+
+   @(client/request {:url (str  "https://api.telegram.org/bot" token "/getWebhookInfo")})])

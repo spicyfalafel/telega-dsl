@@ -81,14 +81,16 @@
   (when (:menu step)
     (:-> (first (filter
                  (fn [menu-item]
-                   (= telegram-data (:label menu-item)))
+                   (or (= telegram-data (:value menu-item))
+                       (= telegram-data (:label menu-item))))
                  (:menu step))))))
 
 (defn menu-clicked-no-goto [step telegram-data]
   (when (:menu step)
     (first (filter
             (fn [menu-item]
-              (= telegram-data (:label menu-item)))
+              (or (= telegram-data (:value menu-item))
+                  (= telegram-data (:label menu-item))))
             (:menu step)))))
 
 (defn goto-without-input? [current-step]
@@ -121,7 +123,7 @@
       (misc/get-current-step ctx chat-id))))
 
 (defn save-menu-item [ctx id menu-item telegram-data]
-  (when (and (= telegram-data (:label menu-item)) (:save-as menu-item))
+  (when (and (= telegram-data (:value menu-item)) (:save-as menu-item))
     (misc/add-dialog-data! ctx id
                            (:save-as menu-item)
                            (or (:value menu-item)
@@ -140,5 +142,4 @@
         _ (handle-save ctx chat-id last-step telegram-data)
         next-step (next-step! ctx steps chat-id telegram-data)
         result (handle-step ctx next-step chat-id telegram-data)]
-
     {:result result}))
