@@ -27,40 +27,24 @@
 (defn menu->tg [menu]
   [(mapv menu-item->tg menu)])
 
-(defn send-menu [id text menu]
-  (tbot/send-message
-   bot/mybot
-   id
-   text
-   {:reply_markup
-    {:inline_keyboard
-     (menu->tg menu)}}))
+(defn handle-send [ctx step id message]
+  (when step
+    (let [params (cond-> {}
+                   (:menu step)
+                   (merge {:reply_markup
+                           {:inline_keyboard
+                            (menu->tg (:menu step))}})
 
-(defn call-message-fn [ctx id _data message]
-  (let [message-fn-res (message (misc/get-dialog-data ctx id))]
-    (when (string? message-fn-res)
-      (tbot/send-message bot/mybot id message-fn-res))))
+                   (true? (:reply step))
+                   (merge {:reply_parameters
+                           {:message_id (:message_id message)}}))
+          text (cond
+                 (fn? (:message step))
+                 ((:message step) (misc/get-dialog-data ctx id))
 
-(defn handle-message [ctx step id data]
-  (cond
-    (string? (:message step))
-    #(tbot/send-message bot/mybot id (:message step))
-
-    (fn? (:message step))
-    #(call-message-fn ctx id data (:message step))
-    :else nil))
-
-(defn handle-menu [id text step]
-  #(send-menu id text (:menu step)))
-
-(defn handle-step [ctx step id data]
-  (let [fns (cond-> []
-              (:menu step)
-              (conj (handle-menu id (:message step) step))
-
-              (and (not (:menu step)) (:message step))
-              (conj (handle-message ctx step id data)))]
-    (mapv (fn [f] (f)) fns)))
+                 (string? (:message step))
+                 (:message step))]
+      (tbot/send-message bot/mybot id text params))))
 
 (defn goto-aliases [all-steps goto]
   (cond
@@ -143,11 +127,11 @@
 (defn continue-after-step? [{:keys [message save-as menu]}]
   (and message (not save-as) (not menu)))
 
-(defn handle-current-step [ctx steps chat-id telegram-data]
+(defn handle-current-step [ctx steps chat-id message]
   (let [last-step (misc/get-current-step ctx chat-id)
-        _ (handle-save ctx chat-id last-step telegram-data)
-        next-step (next-step! ctx steps chat-id telegram-data)
-        result (handle-step ctx next-step chat-id telegram-data)]
+        _ (handle-save ctx chat-id last-step (:text message))
+        next-step (next-step! ctx steps chat-id (:text message))
+        result (handle-send ctx next-step chat-id message)]
     (when (continue-after-step? next-step)
-      (handle-current-step ctx steps chat-id telegram-data))
-    {:result result}))
+      (handle-current-step ctx steps chat-id message))
+    result))

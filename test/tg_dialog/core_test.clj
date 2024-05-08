@@ -132,57 +132,32 @@
     {:id 1})
 
   (matcho/match
-   (steps/handle-message {} nil me {})
-    nil)
-
-  (matcho/match
-   (steps/call-message-fn
-    (atom {me {:DIALOG_DATA {:name "slava"}}})
-    me
-    {}
-    (fn [ctx] (str "hello " (:name ctx))))
-
-    {:result {:text "hello slava"}, :ok true})
-
-  (matcho/match
    (sut/handle-command (atom {:commands bot-commands})
                        :start
                        me {})
-    {:result
-     [{:result
-       {:chat
-        {:id 202476208},
-        :text "m-1"
-        :reply_markup
-        {:inline_keyboard
-         [[{:callback_data "menu-1", :text "menu-1"}
-           {:callback_data "menu-2", :text "menu-2"}]]}}
-       :ok true}]})
+   {:result
+    {:chat
+     {:id 202476208},
+     :text "m-1"
+     :reply_markup
+     {:inline_keyboard
+      [[{:callback_data "menu-1", :text "menu-1"}
+        {:callback_data "menu-2", :text "menu-2"}]]}}
+    :ok true})
 
   (matcho/match
-   (sut/process-message (atom {:commands bot-commands}) me "/command")
+   (sut/process-message (atom {:commands bot-commands}) me {:text "/command"})
     {:result {:text "no such command"}})
 
   (matcho/match
-   (sut/process-message (atom {:commands bot-commands}) me "/help")
+   (sut/process-message (atom {:commands bot-commands}) me {:text "/help"})
     {:result {:text "Hello"}, :ok true})
 
   (matcho/match
-   (sut/process-message (atom {:commands bot-commands}) me "/start")
-    {:result [{:result {:text "m-1"}, :ok true} nil]})
+   (sut/process-message (atom {:commands bot-commands}) me {:text "/start"})
+    {:result {:text "m-1"}, :ok true})
 
-  (matcho/match
-   (steps/send-menu me "hello"
-                    [{:label "l1" :value "l1"}
-                     {:label "l2" :save-as [:menu1]}])
-    {:result
-     {:reply_markup
-      {:inline_keyboard
-       [[{:callback_data "l1", :text "l1"}
-         {:callback_data "l2", :text "l2"}]]},
-      :text "hello"}})
-
-;; /start -> step1
+  ;; /start -> step1
   ;; send text & menu => wait, step1
   ;; click on button => callback, step2
 

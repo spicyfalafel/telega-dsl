@@ -39,6 +39,7 @@
   (json/read-value body json/keyword-keys-object-mapper))
 
 (defn parse-command [commands user-text]
+  (println "u text " user-text)
   (when (str/starts-with? user-text "/")
     (first (filterv #(= % (keyword (subs user-text 1)))
                     (keys commands)))))
@@ -52,16 +53,17 @@
 (defn current-command [ctx id]
   (get (:commands @ctx) (-> ctx deref (get id) :CURRENT_COMMAND)))
 
-(defn process-message [ctx id telegram-data]
+(defn process-message [ctx id message]
+  (println "message  " message)
   (let [commands (:commands @ctx)
-        command-key (parse-command commands telegram-data)]
+        command-key (parse-command commands (:text message))]
     (if command-key
-      (handle-command ctx command-key id telegram-data)
+      (handle-command ctx command-key id (:text message))
       (if (in-dialog? ctx id)
         (steps/handle-current-step
          ctx
          (current-command ctx id)
-         id telegram-data)
+         id message)
         (send-message id "no such command")))))
 
 (defn handle-callback [ctx id telegram-data]
@@ -76,14 +78,14 @@
   (fn [req]
     (def r req)
     (let [body (parse-body (:body req))
-          data (-> body :message :text)
+          message (:message body)
           chat-id (-> body :message :chat :id)
           chat-id-from-callback (-> body :callback_query :message :chat :id)
           callback-data (-> body :callback_query)]
       (def b body)
       (if callback-data
         (handle-callback ctx chat-id-from-callback callback-data)
-        (process-message ctx chat-id data))
+        (process-message ctx chat-id message))
       {:status  200
        :headers {"Content-Type" "text/html"}
        :body   "ok"})))
@@ -130,6 +132,7 @@
 
 (comment
 
+  (def me 202476208)
   (def ngrok-url "https://f3c4-188-243-183-57.ngrok-free.app")
   (def token (System/getenv "BOT_TOKEN"))
 
@@ -140,9 +143,7 @@
    @(client/request {:url (str "https://api.telegram.org/bot" token "/setWebhook")
                      :query-params
                      {:url (str ngrok-url)
-                      :allowed_updates
-                      []
+                      :allowed_updates [] }})
 
-                      #_["message", "edited_channel_post", "callback_query"]}})
-
-   @(client/request {:url (str  "https://api.telegram.org/bot" token "/getWebhookInfo")})])
+   @(client/request {:url (str  "https://api.telegram.org/bot" token "/getWebhookInfo")})]
+  )
