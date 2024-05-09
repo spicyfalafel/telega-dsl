@@ -14,8 +14,7 @@
 
 (set! *warn-on-reflection* true)
 
-(def CTX (atom {;; 1234 {:CURRENT_STEP {} :DIALOG_DATA {} }
-                }))
+(defonce CTX (atom {}))
 
 (defonce SERVER (atom nil))
 
@@ -72,7 +71,7 @@
   (let [resp (tbot/get-updates bot {:offset offset
                                     :timeout timeout})]
     (if (contains? resp :error)
-      (t/error! (str "get-updates error:" (:error resp)))
+      (t/error! (str "Get-updates error:" (:error resp)))
       resp)))
 
 (defonce update-id (atom nil))
@@ -84,19 +83,14 @@
 
 (defn- polling [ctx {:keys [poll-timeout sleep]}]
   (loop []
-    (t/log! "checking for chat updates.")
+    (t/log! "Checking for chat updates.")
     (let [updates (poll-updates (:bot @ctx) @update-id poll-timeout)
           messages (:result updates)]
-
-      ;; Check all messages, if any, for commands/keywords.
       (doseq [msg messages]
         (app* ctx msg)
 
         ;; Increment the next update-id to process.
-        (-> msg
-            :update_id
-            inc
-            set-id!))
+        (-> msg :update_id inc set-id!))
 
       ;; Wait a while before checking for updates again.
       (Thread/sleep ^long sleep))
@@ -107,7 +101,7 @@
     (when url
       (tbot/set-webhook (:bot @ctx) {:url url
                                      :content-type :multipart}))
-    (t/log! "Server ready")
+    (t/log! "Server ready!")
     (when server
       (reset! SERVER server))))
 
@@ -116,9 +110,9 @@
     (do (@SERVER)
         (reset! SERVER nil)
         :down)
-    (let [bot (tbot/create token)
-          _ (reset! CTX {:commands (commands/prepare-commands commands)
-                         :bot bot})]
+    (let [bot (tbot/create token)]
+      (reset! CTX {:commands (commands/prepare-commands commands)
+                   :bot bot})
       (when url (tbot/delete-webhook bot))
       (if (= :polling type)
         (polling CTX opts)
