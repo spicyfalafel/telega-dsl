@@ -1,6 +1,6 @@
 (ns tg-dialog.commands
   (:require
-   [tg-dialog.steps :as steps]))
+   [tg-dialog.state :as state]))
 
 (def no-id-step-prefix "no-id-step")
 
@@ -38,7 +38,7 @@
               {:label "Back"
                :-> (cond
                      (true? back)
-                     (:id (steps/prev-step-by-index steps step))
+                     (:id (state/prev-step-by-index steps step))
 
                      (string? back)
                      back)})

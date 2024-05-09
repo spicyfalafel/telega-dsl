@@ -29,14 +29,14 @@
     [{:result
       {:reply_markup
        {:inline_keyboard
-        [[{:callback_data "menu-1", :text "menu-1"}
-          {:callback_data "menu-2", :text "menu-2"}]]},
+        [[{:callback_data "menu-1", :text "menu-1"}]
+         [{:callback_data "menu-2", :text "menu-2"}]]},
        :text "m-1"}}])
 
   (matcho/match
    @ctx
     {me {:CURRENT_COMMAND :start
-         :CURRENT_STEP (first start-command)}})
+         :CURRENT_STEP "no-id-step0"}})
 
   (matcho/match
    (sut/process-message
@@ -46,9 +46,9 @@
     [{:result
       {:reply_markup
        {:inline_keyboard
-        [[{:callback_data "value-2-1", :text "menu-2-1"}
-          {:callback_data "menu-2-2", :text "menu-2-2"}
-          {:callback_data "menu-2-3", :text "menu-2-3"}]]},
+        [[{:callback_data "value-2-1", :text "menu-2-1"}]
+         [{:callback_data "menu-2-2", :text "menu-2-2"}]
+         [{:callback_data "menu-2-3", :text "menu-2-3"}]]}
        :text "m-2"},
       :ok true}])
 
@@ -69,8 +69,8 @@
     [{:result
       {:reply_markup
        {:inline_keyboard
-        [[{:callback_data "menu-1", :text "menu-1"}
-          {:callback_data "menu-2", :text "menu-2"}]]},
+        [[{:callback_data "menu-1", :text "menu-1"}]
+         [{:callback_data "menu-2", :text "menu-2"}]]},
        :text "m-1"},
       :ok true}]))
 
@@ -92,8 +92,8 @@
     [{:result {:text "a"}}
      {:result {:reply_markup
                {:inline_keyboard
-                [[{:callback_data "false", :text "n"}
-                  {:callback_data "true", :text "y"}]]},
+                [[{:callback_data "false", :text "n"}]
+                 [{:callback_data "true", :text "y"}]]},
                :text "b"}} nil])
 
   (matcho/match
@@ -109,8 +109,8 @@
     [{:result {:text "a"}}
      {:result {:reply_markup
                {:inline_keyboard
-                [[{:callback_data "false", :text "n"}
-                  {:callback_data "true", :text "y"}]]},
+                [[{:callback_data "false", :text "n"}]
+                 [{:callback_data "true", :text "y"}]]},
                :text "b"}} nil])
 
   (matcho/match
@@ -152,9 +152,10 @@
     [{:result {:text "a"}}
      {:result {:reply_markup
                {:inline_keyboard
-                [[{:callback_data "n", :text "n"}
-                  {:callback_data "y", :text "y"}
-                  {:callback_data "Back", :text "Back"}]]},
+                [[{:callback_data "n", :text "n"}]
+                 [{:callback_data "y", :text "y"}]
+                 [{:callback_data "Back", :text "Back"}]]}
+
                :text "b"}} nil])
 
   (matcho/match
@@ -162,8 +163,9 @@
     [{:result {:text "a"}}
      {:result {:reply_markup
                {:inline_keyboard
-                [[{:callback_data "n", :text "n"}
-                  {:callback_data "y", :text "y"}]]},
+                [[{:callback_data "n", :text "n"}]
+                 [{:callback_data "y", :text "y"}]
+                 ]},
                :text "b"}} nil])
 
   (matcho/match

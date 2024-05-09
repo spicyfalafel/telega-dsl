@@ -8,7 +8,7 @@
      :save-as [:name]}
 
     {:message "Do you like to write bots?"
-     :save-as [:like-bots]
+     :save-as [:like_bots]
      :menu [{:label "Yes"}
             {:label "No" :-> :end}]
      :reply true
@@ -16,7 +16,6 @@
      :error {:message "I don't understand you :("}}
 
     {:message "Cool, I'm too!\nWhat programming language did you use for it?"
-     :reply true
      :save-as [:language]}
 
     {:when (fn [ctx] (= "Python" (:language ctx)))
@@ -27,14 +26,15 @@
      (fn [ctx]
        (cond-> (format "I'll keep you in mind, %s," (:name ctx))
 
-         (and (:language ctx) (= "Yes" (:like-bots ctx)))
+         (and (:language ctx) (= "Yes" (:like_bots ctx)))
          (str (format " you like to write bots with %s" (:language ctx)))
 
-         (= "No" (:like-bots ctx))
+         (= "No" (:like_bots ctx))
          (str " you don't like to write bots, so sad...")))}]})
 
 
 (defn -main []
- (tg-dialog/start-bot bot-commands {:token (System/getenv "BOT_TOKEN")
-                                    :type :polling
+ (tg-dialog/start-bot bot-commands {:type :webhook
+                                    :url "https://f3c4-188-243-183-57.ngrok-free.app"
+                                    :token (System/getenv "BOT_TOKEN")
                                     :port 8080}))

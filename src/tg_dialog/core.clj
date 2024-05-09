@@ -1,10 +1,11 @@
 (ns tg-dialog.core
   (:require
    [telegrambot-lib.core :as tbot]
+   [tg-dialog.mongo :as mongo]
    [clojure.string :as str]
    [jsonista.core :as json]
    [tg-dialog.commands :as commands]
-   [tg-dialog.example.example-group :as example]
+   [tg-dialog.example.all :as examples]
    [org.httpkit.client :as client]
    [org.httpkit.server :as hk-server]
    [tg-dialog.tg :as tg]
@@ -27,7 +28,7 @@
                     (keys commands)))))
 
 (defn- in-dialog? [ctx id]
-  (state/get-current-step ctx id))
+  (state/get-current-step-id ctx id))
 
 (defn process-message [ctx id message]
   (let [commands (:commands @ctx)
@@ -105,26 +106,33 @@
     (when server
       (reset! SERVER server))))
 
-(defn start-bot [commands & [{:keys [type token url] :as opts}]]
+(defn start-bot [commands & [{:keys [type token url db] :as opts}]]
   (if @SERVER
     (do (@SERVER)
         (reset! SERVER nil)
         :down)
     (let [bot (tbot/create token)]
       (reset! CTX {:commands (commands/prepare-commands commands)
-                   :bot bot})
+                   :bot bot
+                   :dbtype (:type db)
+                   :db (when db (mongo/get-db db))})
       (when url (tbot/delete-webhook bot))
       (if (= :polling type)
         (polling CTX opts)
         (webhook CTX opts))
       :up)))
 
-#_(start-bot example/bot-commands {:type :webhook
-                                   :url "https://f3c4-188-243-183-57.ngrok-free.app"
+#_(start-bot examples/telega-dsl {:type :webhook
+                                   :url "https://b212-95-164-88-155.ngrok-free.app"
                                    :token (System/getenv "BOT_TOKEN")
-                                   :port 8080})
+                                   :port 8080
+                                   :db {:type :mongo
+                                        :username "admin"
+                                        :password "admin"
+                                        :host "127.0.0.1"
+                                        :db "telegram"}})
 
-#_(start-bot example/bot-commands {:type :polling
+#_(start-bot examples/aiogram {:type :polling
                                    :token (System/getenv "BOT_TOKEN")
                                    :poll-timeout 10
                                    :sleep 1000})

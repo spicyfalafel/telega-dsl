@@ -1,8 +1,7 @@
 (ns tg-dialog.handlers
   (:require
     [tg-dialog.tg :as tg]
-    [tg-dialog.state :as state]
-    [tg-dialog.steps :as steps]))
+    [tg-dialog.state :as state]))
 
 (defn save-menu-item [ctx id menu-item telegram-data]
   (when (and (or (= telegram-data (:value menu-item))
@@ -51,15 +50,14 @@
   (mapv menu-item->tg menu))
 
 (defn handle-send [ctx step id message]
-  (when (and step
-             (handle-when ctx id step))
+  (when (and step (handle-when ctx id step))
     (let [params (cond-> {}
                    (:menu step)
                    (merge {:reply_markup
                            {:inline_keyboard
                             (menu->tg (:menu step))}})
 
-                   (true? (:reply step))
+                   (and (true? (:reply step)) (:message_id message))
                    (merge {:reply_parameters
                            {:message_id (:message_id message)}}))
           text (cond
@@ -73,7 +71,7 @@
 (defn handle-current-step [ctx steps chat-id message]
   (let [last-step (state/get-current-step ctx chat-id)
         _ (handle-save ctx chat-id last-step (:text message))
-        next-step (steps/next-step! ctx steps chat-id (:text message))
+        next-step (state/next-step! ctx steps chat-id (:text message))
         result (handle-send ctx next-step chat-id message)
         when-skipped? (and (:when next-step) (not result))]
     (if (continue-after-step? next-step when-skipped?)
