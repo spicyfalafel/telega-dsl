@@ -1,4 +1,4 @@
-{:paths       ["src", "resources", "classes"]
+{:paths ["src"]
  :deps
  {org.clojure/clojure {:mvn/version "1.11.1"}
 
@@ -12,11 +12,8 @@
   http-kit/http-kit {:mvn/version "2.7.0"}
   ;; logging
   com.taoensso/telemere {:mvn/version "1.0.0-beta10"}
-
   ;; mongo
-  com.novemberain/monger {:mvn/version "3.6.0"}
-  ;; redis
-  com.taoensso/carmine {:mvn/version "3.3.2"}}
+  com.novemberain/monger {:mvn/version "3.6.0"}}
 
   :aliases
   {:nrepl {:extra-deps {com.health-samurai/matcho     {:mvn/version "0.3.11"}

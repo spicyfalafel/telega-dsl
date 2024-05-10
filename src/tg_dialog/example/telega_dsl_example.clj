@@ -52,6 +52,9 @@
 
            {:when (fn [ctx] (= true (:want-bio ctx)))
             :message "Расскажите о своих увлечениях в IT:"
+            :validate (fn [bio]
+                        (when (<= (count bio) 50)
+                          "Описание должно быть длиннее 50 символов."))
             :save-as [:bio]
             :back true}
 

@@ -32,7 +32,7 @@
             (assoc menu-item :value (:label menu-item)))) menu)))))
 
 (defn add-back-button [steps step]
-  (let [back  (:back step)]
+  (let [back (:back step)]
     (if back
       (update step :menu
               conj

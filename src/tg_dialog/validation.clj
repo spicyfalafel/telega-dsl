@@ -43,6 +43,11 @@
 (defn validate-command [command]
   (m/validate command-schema command))
 
+(defn menu-options [menu]
+  (into #{} (mapv
+             #(or (:value %) (:label %))
+             menu)))
+
 (defn validate-commands [commands]
   (m/explain (m/schema [:map
                         [::m/default [:map-of :keyword #'command-schema]]]) commands))
@@ -80,11 +85,6 @@
   [step text]
   ((:validate step) text))
 
-(defn menu-options [menu]
-  (into #{} (mapv
-             #(or (:value %) (:label %))
-             menu)))
-
 (defmethod user-validate-step
   :options
   [{{menu-values :menu-values} :validate menu :menu :as _step} text]
@@ -101,10 +101,6 @@
 (defmethod user-validate-step
   :malli
   [{malli-vector :validate} text]
-  (def aa malli-vector)
-  (first aa)
-  (def bb text)
-  (me/humanize (m/explain (m/schema aa) bb))
   (if-let [errors (me/humanize (m/explain (m/schema malli-vector) text))]
     (first errors)
     true))
