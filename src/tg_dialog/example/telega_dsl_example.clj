@@ -3,12 +3,7 @@
             [malli.error :as me]
             [clojure.string :as str]))
 
-(set! *warn-on-reflection* true)
-
-(defn student-exists? [name-s] true)
-
 (def name-schema
-  #_[:re {:error/message "Имя и фамилия должны содержать пробел."} #".+\s+.+"]
   [:and
    [:re {:error/message "Имя и фамилия должны содержать пробел."} #".+\s+.+"]
    [:fn
@@ -17,12 +12,6 @@
       (let [[name surname] (str/split name-s #"\s+")]
         (and (Character/isUpperCase ^Character (first name))
              (Character/isUpperCase ^Character (first surname)))))]])
-
-(defn validate-name [name-s]
-  (if (m/validate name-schema name-s)
-    (when-not (student-exists? name-s)
-      {:error/message "Студент с таким именем и фамилией не найден в базе данных."})
-    {:error/message "Неверный формат имени и фамилией."}))
 
 (def bot-commands
   {:start [{:message "Добро пожаловать! Давайте начнем регистрацию."}

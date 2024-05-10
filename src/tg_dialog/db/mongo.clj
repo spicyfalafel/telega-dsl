@@ -1,4 +1,4 @@
-(ns tg-dialog.mongo
+(ns tg-dialog.db.mongo
   (:require
    [clojure.string :as str]
    [monger.collection :as mc]

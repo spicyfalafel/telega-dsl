@@ -54,21 +54,7 @@
 
 (defmulti user-validate-step
   (fn [step _]
-    (let [validate  (:validate step)
-          type (type validate)]
-      ;; any better way?
-      (cond
-        (= type java.util.regex.Pattern)
-        :regex
-
-        (fn? validate)
-        :fn
-
-        (map? validate)
-        :options
-
-        (vector? validate)
-        :malli))))
+    (type (:validate step))))
 
 (defmethod user-validate-step
   :default
@@ -76,17 +62,17 @@
   :ok)
 
 (defmethod user-validate-step
-  :regex
+  java.util.regex.Pattern
   [step text]
   (re-matches (:validate step) text))
 
 (defmethod user-validate-step
-  :fn
+  clojure.lang.AFunction
   [step text]
   ((:validate step) text))
 
 (defmethod user-validate-step
-  :options
+  clojure.lang.IPersistentMap
   [{{menu-values :menu-values} :validate menu :menu :as _step} text]
   (cond
     ;; check if text is one of menu optiosn
@@ -99,7 +85,7 @@
     :else true))
 
 (defmethod user-validate-step
-  :malli
+  clojure.lang.PersistentVector
   [{malli-vector :validate} text]
   (if-let [errors (me/humanize (m/explain (m/schema malli-vector) text))]
     (first errors)
@@ -115,12 +101,8 @@
           (when (vector? (:validate step))
             (try
               (me/humanize (m/explain (m/schema (:validate step)) "check"))
-              (catch ArityException e
-                (throw (Exception. (str "Wrong malli schema " (:validate step)))))
-              #_(when (me/humanize (m/explain (m/schema (:validate step)) "check"))
-                  (throw (Exception. (str "Wrong malli schema " (:validate step)
-                                          " "
-                                          (me/humanize (m/explain (m/schema (:validate step)) "check")))))))))
+              (catch ArityException _
+                (throw (Exception. (str "Wrong malli schema " (:validate step))))))))
 
         steps))) commands))
 
@@ -129,5 +111,3 @@
           :error/path [:message]}
      (fn [{:keys [message steps]}]
        (not (and message steps)))])
-
-

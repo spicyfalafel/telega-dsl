@@ -11,7 +11,7 @@
   ;; http server
   http-kit/http-kit {:mvn/version "2.7.0"}
   ;; logging
-  com.taoensso/telemere {:mvn/version "1.0.0-beta10"}
+  ;; com.taoensso/telemere {:mvn/version "1.0.0-beta10"}
   ;; mongo
   com.novemberain/monger {:mvn/version "3.6.0"}}
 
@@ -24,6 +24,16 @@
            :extra-paths ["test"]
            :main-opts   ["-m" "nrepl.cmdline" "--middleware"
                          "[refactor-nrepl.middleware/wrap-refactor,cider.nrepl/cider-middleware]"]}
+
+   :deploy {:extra-deps {slipset/deps-deploy {:mvn/version "RELEASE"}}
+            :exec-fn deps-deploy.deps-deploy/deploy
+            :exec-args {:installer :remote
+                        :sign-releases? false
+                        :artifact "target/tg-dialog-0.0.1-standalone.jar"}}
+
+   ; build alias:
+   :build {:deps {io.github.clojure/tools.build {:git/tag "v0.8.1" :git/sha "7d40500"}}
+           :ns-default build}  ; <-- set build namespace as default
 
    :test {:extra-paths ["test"]
           :extra-deps {io.github.cognitect-labs/test-runner

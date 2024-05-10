@@ -1,7 +1,6 @@
 (ns tg-dialog.core
   (:require
    [telegrambot-lib.core :as tbot]
-   [tg-dialog.mongo :as mongo]
    [clojure.string :as str]
    [jsonista.core :as json]
    [tg-dialog.commands :as commands]
@@ -11,7 +10,7 @@
    [tg-dialog.tg :as tg]
    [tg-dialog.state :as state]
    [tg-dialog.handlers :as handlers]
-   [taoensso.telemere :as t]))
+   #_[taoensso.telemere :as t]))
 
 (set! *warn-on-reflection* true)
 
@@ -58,7 +57,7 @@
       (process-message ctx chat-id message))))
 
 (defn app [ctx]
-  (t/log! "Server is starting")
+  ;; (t/log! "Server is starting")
   (fn [req]
     (let [body (parse-body (:body req))]
       (app* ctx body)
@@ -72,7 +71,8 @@
   (let [resp (tbot/get-updates bot {:offset offset
                                     :timeout timeout})]
     (if (contains? resp :error)
-      (t/error! (str "Get-updates error:" (:error resp)))
+      (println (str "Get-updates error:" (:error resp)))
+      #_(t/error! (str "Get-updates error:" (:error resp)))
       resp)))
 
 (defonce update-id (atom nil))
@@ -84,7 +84,7 @@
 
 (defn- polling [ctx {:keys [poll-timeout sleep]}]
   (loop []
-    (t/log! "Checking for chat updates.")
+    ;; (t/log! "Checking for chat updates.")
     (let [updates (poll-updates (:bot @ctx) @update-id poll-timeout)
           messages (:result updates)]
       (doseq [msg messages]
@@ -102,7 +102,7 @@
     (when url
       (tbot/set-webhook (:bot @ctx) {:url url
                                      :content-type :multipart}))
-    (t/log! "Server ready!")
+    ;; (t/log! "Server ready!")
     (when server
       (reset! SERVER server))))
 
@@ -115,22 +115,25 @@
       (reset! CTX {:commands (commands/prepare-commands commands)
                    :bot bot
                    :dbtype (:type db)
-                   :db (when db (mongo/get-db db))})
+                   :db (when db (state/get-db db))})
       (when url (tbot/delete-webhook bot))
       (if (= :polling type)
         (polling CTX opts)
         (webhook CTX opts))
       :up)))
 
-#_(start-bot tg-dialog.example.telega-dsl-example/bot-commands {:type :webhook
-                                   :url "https://b212-95-164-88-155.ngrok-free.app"
-                                   :token (System/getenv "BOT_TOKEN")
-                                   :port 8080
-                                   :db {:type :mongo
-                                        :username "admin"
-                                        :password "admin"
-                                        :host "127.0.0.1"
-                                        :db "telegram"}})
+(defn main [])
+
+#_(start-bot tg-dialog.example.telega-dsl-example/bot-commands
+             {:type :webhook
+              :url "https://b212-95-164-88-155.ngrok-free.app"
+              :token (System/getenv "BOT_TOKEN")
+              :port 8080
+              :db {:type :mongo
+                   :username "admin"
+                   :password "admin"
+                   :host "127.0.0.1"
+                   :db "telegram"}})
 
 #_(start-bot examples/aiogram {:type :polling
                                :token (System/getenv "BOT_TOKEN")

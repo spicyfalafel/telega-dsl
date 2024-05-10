@@ -1,7 +1,7 @@
 (ns tg-dialog.state
   (:require
    [tg-dialog.misc :as misc]
-   [tg-dialog.mongo :as mongo]
+   [tg-dialog.db.mongo :as mongo]
    [clojure.set :as set]))
 
 (defn goto-aliases [all-steps goto]
@@ -37,7 +37,7 @@
   [ctx id command-key]
   (mongo/set-command! ctx id command-key))
 
-(defmulti get-current-step-id (fn [ctx _id] (-> @ctx :dbtype)))
+(defmulti get-current-step-id (fn [ctx _id] (:dbtype @ctx)))
 
 (defmethod get-current-step-id
   :default
@@ -219,3 +219,6 @@
     (when last-step
       (change-current-step! ctx chat-id (:id last-step))
       (get-current-step ctx chat-id))))
+
+(defn get-db [db]
+  (mongo/get-db db))
