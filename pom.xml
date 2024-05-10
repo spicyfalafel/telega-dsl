@@ -5,7 +5,7 @@
   <artifactId>tg-dialog</artifactId>
   <version>0.0.1</version>
   <name>tg-dialog</name>
-  <description>Telegram DSL</description>
+  <description>Telegram Bot DSL</description>
   <url>https://github.com/spicyfalafel/telega-dsl</url>
   <licenses>
     <license>
