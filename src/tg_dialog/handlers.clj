@@ -84,7 +84,6 @@
   (state/remove-data-paths! ctx chat-id command-key)
   (state/set-command! ctx chat-id command-key)
 
-  #_(assert (= true (validation/validate-command command)) "wrong command")
   (let [command (command-key (:commands @ctx))
         message (:message command)
         steps (vector? command)]

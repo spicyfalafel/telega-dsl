@@ -1,7 +1,6 @@
 (ns tg-dialog.example.telega-dsl-example
   (:require [malli.core :as m]
             [malli.error :as me]
-            [tg-dialog.core :as tg-dialog]
             [clojure.string :as str]))
 
 (set! *warn-on-reflection* true)
@@ -71,7 +70,3 @@
                                 (:group ctx) (:name ctx) (:bio ctx)))}]
 
    :help [{:message "Этот бот помогает студентам пройти регистрацию в системе обучения."}]})
-
-(defn -main []
-  (tg-dialog/start-bot bot-commands {:token (System/getenv "BOT_TOKEN")
-                                     :type :polling}))

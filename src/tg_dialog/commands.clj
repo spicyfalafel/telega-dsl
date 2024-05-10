@@ -1,6 +1,7 @@
 (ns tg-dialog.commands
   (:require
-   [tg-dialog.state :as state]))
+    [tg-dialog.validation :as validation]
+    [tg-dialog.state :as state]))
 
 (def no-id-step-prefix "no-id-step")
 
@@ -50,6 +51,8 @@
     steps))
 
 (defn prepare-commands [commands]
+  (when-not (validation/validate-commands commands)
+    (throw (Exception. "Not valid commands")))
   (->> commands
        (mapv (fn [[command-name command]]
                [command-name (-> command

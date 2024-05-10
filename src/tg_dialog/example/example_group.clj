@@ -17,8 +17,3 @@
                        group
                        "не задана")))}]
    :help {:message "Hello"}})
-
-;; (defn -main []
-;;   (poc/start-bot bot-commands {:token (System/getenv "BOT_TOKEN")
-;;                                :type :webhook
-;;                                :port 8080}))

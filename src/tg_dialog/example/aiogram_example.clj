@@ -1,6 +1,4 @@
-(ns tg-dialog.example.aiogram-example
-  (:require
-   [tg-dialog.core :as tg-dialog]))
+(ns tg-dialog.example.aiogram-example)
 
 (def bot-commands
   {:start
@@ -31,10 +29,3 @@
 
          (= "No" (:like_bots ctx))
          (str " you don't like to write bots, so sad...")))}]})
-
-
-(defn -main []
- (tg-dialog/start-bot bot-commands {:type :webhook
-                                    :url "https://f3c4-188-243-183-57.ngrok-free.app"
-                                    :token (System/getenv "BOT_TOKEN")
-                                    :port 8080}))

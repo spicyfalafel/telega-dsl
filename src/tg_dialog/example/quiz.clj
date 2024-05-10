@@ -1,7 +1,6 @@
 (ns tg-dialog.example.quiz
   (:require
-   [clojure.string :as str]
-   [tg-dialog.core :as tg-dialog]))
+   [clojure.string :as str]))
 
 ;; Для 6 конкретных вопросов
 (def bot-commands-hardcoded
@@ -144,15 +143,3 @@
                                  (str/join "," answers))))}
            {:when (fn [ctx] (:skip ctx))
             :message "Вы пропустили тест."}]))})
-
-(comment
-  (tg-dialog/start-bot bot-commands-generated {:type :webhook
-                                               :url "https://f3c4-188-243-183-57.ngrok-free.app"
-                                               :token (System/getenv "BOT_TOKEN")
-                                               :port 8080})
-
-  (tg-dialog/start-bot bot-commands-hardcoded {:type :webhook
-                                               :url "https://f3c4-188-243-183-57.ngrok-free.app"
-                                               :token (System/getenv "BOT_TOKEN")
-                                               :port 8080})
-  )
