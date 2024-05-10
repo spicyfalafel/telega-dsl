@@ -122,7 +122,7 @@
         (webhook CTX opts))
       :up)))
 
-#_(start-bot examples/telega-dsl {:type :webhook
+#_(start-bot tg-dialog.example.telega-dsl-example/bot-commands {:type :webhook
                                    :url "https://b212-95-164-88-155.ngrok-free.app"
                                    :token (System/getenv "BOT_TOKEN")
                                    :port 8080
@@ -133,9 +133,9 @@
                                         :db "telegram"}})
 
 #_(start-bot examples/aiogram {:type :polling
-                                   :token (System/getenv "BOT_TOKEN")
-                                   :poll-timeout 10
-                                   :sleep 1000})
+                               :token (System/getenv "BOT_TOKEN")
+                               :poll-timeout 10
+                               :sleep 1000})
 (comment
 
   (def me 202476208)

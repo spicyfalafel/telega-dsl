@@ -5,13 +5,14 @@
 
 (set! *warn-on-reflection* true)
 
-(defn student-exists? [name-s])
+(defn student-exists? [name-s] true)
 
 (def name-schema
+  #_[:re {:error/message "Имя и фамилия должны содержать пробел."} #".+\s+.+"]
   [:and
    [:re {:error/message "Имя и фамилия должны содержать пробел."} #".+\s+.+"]
    [:fn
-    {:error/fn (fn [_] "Имя и фамилия должны начинаться с заглавной буквы")}
+    {:error/fn (fn [_ _] "Имя и фамилия должны начинаться с заглавной буквы")}
     (fn [name-s]
       (let [[name surname] (str/split name-s #"\s+")]
         (and (Character/isUpperCase ^Character (first name))
@@ -27,6 +28,8 @@
   {:start [{:message "Добро пожаловать! Давайте начнем регистрацию."}
 
            {:message "Выберите вашу группу:"
+            :validate {:menu-values true}
+            :error "Выберите правильную группу!"
             :menu [{:label "P34111" :save-as [:group]}
                    {:label "P34112" :save-as [:group]}
                    {:label "P34113" :save-as [:group]}
@@ -37,15 +40,17 @@
 
            {:message "Введите ваше имя и фамилию:"
             :save-as [:name]
+            :validate name-schema
             :back true}
 
            {:message "Хотите рассказать о себе?"
             :menu [{:label "Да"  :value true}
                    {:label "Нет" :value false}]
-            :save-as [:bio?]
+            :save-as [:want-bio]
+            :validate {:menu-values true}
             :back true}
 
-           {:when (fn [ctx] (= true (:bio? ctx)))
+           {:when (fn [ctx] (= true (:want-bio ctx)))
             :message "Расскажите о своих увлечениях в IT:"
             :save-as [:bio]
             :back true}
@@ -55,6 +60,7 @@
                          (str "Ваше описание: " bio)
                          "Описание не введено"))
             :menu [{:label "Готово"}]
+            :validate {:menu-values true}
             :back "ask-bio"}
 
            {:message

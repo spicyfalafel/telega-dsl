@@ -51,8 +51,10 @@
     steps))
 
 (defn prepare-commands [commands]
-  (when-not (validation/validate-commands commands)
-    (throw (Exception. "Not valid commands")))
+  (when (validation/validate-commands commands)
+    (throw (Exception. (str "Not valid commands"
+                            (validation/validate-commands commands)))))
+  (validation/check-malli-schemas commands)
   (->> commands
        (mapv (fn [[command-name command]]
                [command-name (-> command
