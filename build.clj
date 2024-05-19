@@ -5,7 +5,7 @@
 (def jar-content (str build-folder "/classes"))
 
 (def basis (b/create-basis {:project "deps.edn"}))
-(def version "0.0.1")
+(def version "0.0.3")
 (def app-name "tg-dialog")
 (def uber-file-name (format "%s/%s-%s-standalone.jar" build-folder app-name version)) ; path for result uber file
 

@@ -29,7 +29,7 @@
             :exec-fn deps-deploy.deps-deploy/deploy
             :exec-args {:installer :remote
                         :sign-releases? false
-                        :artifact "target/tg-dialog-0.0.1-standalone.jar"}}
+                        :artifact "target/tg-dialog-0.0.3-standalone.jar"}}
 
    ; build alias:
    :build {:deps {io.github.clojure/tools.build {:git/tag "v0.8.1" :git/sha "7d40500"}}
