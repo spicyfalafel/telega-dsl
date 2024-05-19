@@ -7,7 +7,7 @@
             {:label "Я не хочу регистрироваться" :-> :end}]}
 
     {:message "Выберите вашу группу:"
-     :menu [{:label "Group1" :save-as [:group] :value "group1"}
+     :menu [{:label "Group1" :save-as [:group]}
             {:label "Group2" :save-as [:group]}
             {:label "Group3" :save-as [:group]}]}
 

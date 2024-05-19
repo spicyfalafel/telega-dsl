@@ -1,44 +1,101 @@
 (ns tg-dialog.validation
   (:require
    [malli.core :as m]
-   [malli.error :as me])
+   [malli.error :as me]
+   [malli.dev.pretty :as pretty])
   (:import
    [clojure.lang ArityException]))
 
 (def label-schema
-  [:map {:closed true}
-   [:label :string]
-   [:save-as
-    {:optional true}
-    [:vector :keyword]]
-   [:value
-    {:optional true}
-    :any]
-   [:->
-    {:optional true}
-    [:or [:string]
-     [:enum :end]]]])
+  (m/schema [:map {:closed true}
+             [:label :string]
+             [:save-as
+              {:optional true}
+              [:vector :keyword]]
+             [:value
+              {:optional true}
+              :any]
+             [:->
+              {:optional true}
+              [:or [:string]
+               [:enum :end]]]]))
 
 (defn validate-label [label]
   (m/validate (m/schema label-schema) label))
 
+(def truefalse-schema
+  (m/schema [:enum
+             {:error/message "should be: true|false"}
+             true false]))
+
 (def step-schema
-  [:map
-   [:id {:optional true} :string]
-   [:message [:or :string fn?]]
-   [:menu {:optional true} [:vector #'label-schema]]])
+  (m/schema
+   [:map
+    {:closed true}
+    [:id {:optional true} :string]
+
+    [:message [:or :string fn?]]
+
+    [:menu
+     {:optional true}
+     [:vector
+      {:min 1
+       :error/message "Menu must contain at least one option"}
+      #'label-schema]]
+
+    [:error
+     {:optional true
+      :error/message "shuld be string"}
+     :string]
+
+    [:reply
+     {:optional true}
+     #'truefalse-schema]
+
+    [:back
+     {:optional true}
+     #'truefalse-schema]
+
+    [:when
+     {:optional true}
+     fn?]
+
+    [:validate
+     {:optional true}
+     [:or
+      fn?
+      [:map
+       [:menu-values #'truefalse-schema]]
+      [:and
+       [:any]
+       [:fn (fn [x] (= java.util.regex.Pattern (type x)))]]]]
+
+    [:-> {:optional true}
+     [:or [:string]
+      [:enum :end]]]
+
+    [:save-as
+     {:optional true}
+     [:vector {:min 1
+               :error/message "should be keyword vector with at least one item"}
+      :keyword]]]))
 
 (defn validate-step [command]
   (m/validate (m/schema step-schema)
               command))
 
+(def message-command
+  (m/schema
+   [:map
+    {:closed true
+     :error/message "message key is required"}
+    [:message [:or :string fn?]]]))
+
 (def command-schema
   (m/schema
-   [:or
-    [:vector {:min 1} #'step-schema]
-    [:map
-     {:closed true}
-     [:message [:or :string fn?]]]]))
+   [:vector {:min 1
+             :error/message "Command must contain at least one step"}
+    #'step-schema]))
 
 (defn validate-command [command]
   (m/validate command-schema command))
@@ -49,8 +106,26 @@
              menu)))
 
 (defn validate-commands [commands]
-  (m/explain (m/schema [:map
-                        [::m/default [:map-of :keyword #'command-schema]]]) commands))
+  (remove
+    (fn [c] (or (empty? c)
+                (and (map? c) (every? empty? (vals c)))))
+    (if (map? commands)
+      (mapv
+        (fn [[command-name steps]]
+          (cond
+            (not (keyword? command-name))
+            {command-name ["should be keyword"]}
+
+            (vector? steps)
+            {command-name (vec (remove nil? (-> (m/schema #'command-schema)
+                                                (m/explain steps)
+                                                (me/humanize))))}
+            :else
+            (vec (remove nil? (-> (m/schema #'message-command)
+                                  (m/explain steps)
+                                  (me/humanize))))))
+        commands)
+      "Commands should be a map")))
 
 (defmulti user-validate-step
   (fn [step _]

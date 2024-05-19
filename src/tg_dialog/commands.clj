@@ -1,5 +1,7 @@
 (ns tg-dialog.commands
   (:require
+    [clojure.pprint :as pprint]
+    [telegrambot-lib.core :as tbot]
     [tg-dialog.validation :as validation]
     [tg-dialog.state :as state]))
 
@@ -50,16 +52,27 @@
     (mapv (comp add-menu-values (partial add-back-button steps)) steps)
     steps))
 
-(defn prepare-commands [commands]
-  (when (validation/validate-commands commands)
-    (throw (Exception. (str "Not valid commands"
-                            (validation/validate-commands commands)))))
+(defn prepare-commands [bot commands]
+  (when (seq (validation/validate-commands commands))
+    (throw (Exception.
+             (str
+               "Errors in commands:\n"
+               (with-out-str
+                 (pprint/pprint (validation/validate-commands commands)))))))
+
   (validation/check-malli-schemas commands)
-  (->> commands
-       (mapv (fn [[command-name command]]
-               [command-name (-> command
-                                 (add-ids)
-                                 (add-menu-values)
-                                 (prepare-steps))]))
-       (into {})))
+
+  (let [commands (->> commands
+                      (mapv (fn [[command-name command]]
+                              [command-name (-> command
+                                                (add-ids)
+                                                (add-menu-values)
+                                                (prepare-steps))]))
+                      (into {}))]
+
+    (tbot/set-chat-menu-button bot)
+    (tbot/set-my-commands bot (mapv (fn [[command _]]
+                                      {:command command :description command})
+                                    commands))
+    commands))
 

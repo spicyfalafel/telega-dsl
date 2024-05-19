@@ -3,8 +3,8 @@
    [telegrambot-lib.core :as tbot]
    [clojure.string :as str]
    [jsonista.core :as json]
+   [clojure.test :as test]
    [tg-dialog.commands :as commands]
-   [tg-dialog.example.all :as examples]
    [org.httpkit.client :as client]
    [org.httpkit.server :as hk-server]
    [tg-dialog.tg :as tg]
@@ -112,11 +112,12 @@
         (reset! SERVER nil)
         :down)
     (let [bot (tbot/create token)]
-      (reset! CTX {:commands (commands/prepare-commands commands)
+      (reset! CTX {:commands (commands/prepare-commands bot commands)
                    :bot bot
                    :dbtype (:type db)
                    :db (when db (state/get-db db))})
-      (when url (tbot/delete-webhook bot))
+      @(client/request {:url (str "https://api.telegram.org/bot" token "/deleteWebhook")
+                        :query-params {:drop_pending_updates true}})
       (if (= :polling type)
         (polling CTX opts)
         (webhook CTX opts))
@@ -124,26 +125,70 @@
 
 (defn main [])
 
-#_(start-bot tg-dialog.example.telega-dsl-example/bot-commands
-             {:type :webhook
-              :url "https://b212-95-164-88-155.ngrok-free.app"
-              :token (System/getenv "BOT_TOKEN")
-              :port 8080
-              :db {:type :mongo
-                   :username "admin"
-                   :password "admin"
-                   :host "127.0.0.1"
-                   :db "telegram"}})
 
-#_(start-bot examples/aiogram {:type :polling
-                               :token (System/getenv "BOT_TOKEN")
-                               :poll-timeout 10
-                               :sleep 1000})
+#_(start-bot tg-dialog.example.quiz/bot-commands-hardcoded
+             {:type :polling
+              :token (System/getenv "BOT_TOKEN")
+              :poll-timeout 10
+              :sleep 1000})
+
+(def bot-commands
+  {:whoami
+   {:message (fn [ctx]
+               (format "Name: %s\nLike bots: %s\nLanguage: %s"
+                       (:name ctx) (:like_bots ctx) (:language ctx)))}
+   :start
+   [{:message "Hi there! What's your name?"
+     :save-as [:name]}
+
+    {:message "Do you like to write bots?"
+     :save-as [:like_bots]
+     :menu [{:label "Yes"}
+            {:label "No" :-> :end}]
+     :reply true
+     :validate {:menu-values true}
+     :error "I don't understand you :("}
+
+    {:message "Cool, I'm too!\nWhat programming language did you use for it?"
+     :save-as [:language]}
+
+    {:when (fn [ctx] (= "Python" (:language ctx)))
+     :message "Python, you say? That's the language that makes my circuits light up! 😉"
+     :reply true}
+
+    {:message
+     (fn [ctx]
+       (cond-> (format "I'll keep you in mind, %s," (:name ctx))
+
+         (and (:language ctx) (= "Yes" (:like_bots ctx)))
+         (str (format " you like to write bots with %s" (:language ctx)))
+
+         (= "No" (:like_bots ctx))
+         (str " you don't like to write bots, so sad...")))}]})
+
+#_(start-bot
+  bot-commands
+  {
+   ;; :type :polling
+   ;; :poll-timeout 10
+   ;; :sleep 500
+   :type :webhook
+   :url "https://75de-188-243-183-57.ngrok-free.app"
+   :port 8080
+   :token (System/getenv "BOT_TOKEN")
+   :db {:type :mongo
+        :username "admin"
+        :password "admin"
+        :host "127.0.0.1"
+        :db "telegram"}})
+
+
 (comment
 
+
   (def me 202476208)
-  (def ngrok-url "https://f3c4-188-243-183-57.ngrok-free.app")
-  (def token (System/getenv "BOT_TOKEN"))
+  (def ngrok-url "https://75de-188-243-183-57.ngrok-free.app")
+  (def token "6964934897:AAHi1MnW7u8gr3iLPeb3BqOebB1x4ZXPmK8")
 
   ;;https://api.telegram.org/bot{my_bot_token}/setWebhook?url={url_to_send_updates_to}
   [@(client/request {:url (str "https://api.telegram.org/bot" token "/deleteWebhook")
@@ -152,6 +197,9 @@
    @(client/request {:url (str "https://api.telegram.org/bot" token "/setWebhook")
                      :query-params
                      {:url (str ngrok-url)
-                      :allowed_updates []}})
+                      :allowed_updates ["message", "edited_channel_post", "callback_query"]}})
 
-   @(client/request {:url (str  "https://api.telegram.org/bot" token "/getWebhookInfo")})])
+   @(client/request {:url (str "https://api.telegram.org/bot" token "/getWebhookInfo")})]
+
+
+  )

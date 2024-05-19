@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>net.clojars.krsvyat</groupId>
   <artifactId>tg-dialog</artifactId>
-  <version>0.0.1</version>
+  <version>0.0.3</version>
   <name>tg-dialog</name>
   <description>Telegram Bot DSL</description>
   <url>https://github.com/spicyfalafel/telega-dsl</url>

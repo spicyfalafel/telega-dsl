@@ -68,6 +68,13 @@
 (defn menu->tg [menu]
   (mapv menu-item->tg menu))
 
+(defn set-message [ctx id message]
+  (cond
+    (fn? message)
+    (message (state/get-dialog-data ctx id))
+
+    (string? message) message))
+
 (defn handle-send [ctx step id message]
   (when (and step (handle-when ctx id step))
     (let [params (cond-> {}
@@ -79,12 +86,8 @@
                    (and (true? (:reply step)) (:message_id message))
                    (merge {:reply_parameters
                            {:message_id (:message_id message)}}))
-          text (cond
-                 (fn? (:message step))
-                 ((:message step) (state/get-dialog-data ctx id))
-
-                 (string? (:message step))
-                 (:message step))]
+          text
+          (set-message ctx id (:message step))]
       (tg/send-message ctx id text params))))
 
 (defn handle-current-step [ctx steps chat-id message]
@@ -109,7 +112,8 @@
         steps (vector? command)]
     (cond
       message
-      (tg/send-message ctx chat-id message)
+      (tg/send-message ctx chat-id
+                       (set-message ctx chat-id message))
 
       steps
       (handle-current-step ctx command chat-id data))))
