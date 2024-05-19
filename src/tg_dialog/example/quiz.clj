@@ -143,3 +143,32 @@
                                  (str/join "," answers))))}
            {:when (fn [ctx] (:skip ctx))
             :message "Вы пропустили тест."}]))})
+
+
+(def maybe
+  {:quiz
+   [{:message "Хотите начать тест 'Лекция 1-2'?"
+     :menu [{:label "Да"}
+            {:label "Нет" :-> :end :save-as [:skip]}]}
+
+    {:message "Ваш первый вопрос"}
+
+    {:id "q1"
+     :message ""
+     :save-as [:q1]
+     :menu [{:label "1. Сокращение времени на разработку" :value 1}
+            {:label "2. Сокращение затрат на разработку" :value 2}
+            {:label "3. Улучшение характеристик разрабатываемой системы" :value 3}
+            {:label "4. Сокращение проектных рисков" :value 4}]}
+
+    {:message (fn [ctx] (str "Запомнили ваш ответ: " (:q1 ctx)))}
+
+    {:message (fn [{:keys [q1 q2 q3 q4 q5 q6]}]
+                (let [answers (mapv = [4 2 1 5 1 2] [q1 q2 q3 q4 q5 q6])
+                      count-right (count (remove false? answers))]
+                  (format "Ваш результат: %s/%s(%s)"
+                          count-right
+                          (count answers)
+                          (str/join "," answers))))}
+    {:when (fn [ctx] (:skip ctx))
+     :message "Вы пропустили тест."}]})
